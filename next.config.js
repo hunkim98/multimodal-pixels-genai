@@ -4,6 +4,7 @@ const nextConfig = {
   transpilePackages: [
     "@adobe/react-spectrum",
     "@react-spectrum/actionbar",
+    "@react-spectrum/color",
     "@react-spectrum/actiongroup",
     "@react-spectrum/avatar",
     "@react-spectrum/badge",
