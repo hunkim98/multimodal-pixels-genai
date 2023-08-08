@@ -5,8 +5,10 @@ import ChveronRightMedium from "@spectrum-icons/ui/ChevronRightMedium";
 import { BrushTool, Dotting, DottingRef, useBrush, useDotting } from "dotting";
 import { parseColor } from "@react-stately/color";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ColorWheel } from "@react-spectrum/color";
+import { generateOutputs } from "@/utils/kandinsky";
+import { ModelInputs } from "@/types/replicate";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +23,18 @@ export default function Home() {
   );
   let [finalValue, setFinalValue] = useState(parseColor("hsl(50, 100%, 50%)"));
   const { clear, setData } = useDotting(dottingRef);
-  const { changeBrushColor, changeBrushTool } = useBrush(dottingRef);
+  const { changeBrushColor, changeBrushTool, brushTool } = useBrush(dottingRef);
+  const [output, setOutput] = useState<object>();
+  const [galleryImage, setGalleryImages] = useState<Array<string>>([]);
+  const [modelInputs, setModelInputs] = useState<ModelInputs>({
+    prompt: "A robot sitting on the ground",
+    image: undefined,
+  });
+  const generateImages = useCallback(() => {
+    generateOutputs(modelInputs).then((output) => {
+      setOutput(output);
+    });
+  }, [modelInputs]);
 
   useEffect(() => {
     changeBrushColor(finalValue.toString("hex"));
@@ -35,10 +48,12 @@ export default function Home() {
           <TextField
             label="Start with a detailed description"
             width={"size-6000"}
-            value={inputPrompt}
-            onChange={setInputPrompt}
+            value={modelInputs.prompt}
+            onChange={(value) => {
+              setModelInputs({ ...modelInputs, prompt: value });
+            }}
           />
-          <Button variant="accent" alignSelf={"end"}>
+          <Button variant="accent" alignSelf={"end"} onPress={generateImages}>
             Generate
           </Button>
         </Flex>
@@ -87,7 +102,13 @@ export default function Home() {
                 <Flex gap={"size-100"}>
                   <Button
                     variant="primary"
-                    onPress={() => changeBrushTool(BrushTool.ERASER)}
+                    onPress={() => {
+                      if (brushTool === BrushTool.ERASER) {
+                        changeBrushTool(BrushTool.DOT);
+                      } else {
+                        changeBrushTool(BrushTool.ERASER);
+                      }
+                    }}
                   >
                     Brush
                   </Button>

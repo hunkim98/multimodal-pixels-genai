@@ -4344,6 +4344,11 @@ regexp.prototype.flags@^1.4.3, regexp.prototype.flags@^1.5.0:
     define-properties "^1.2.0"
     functions-have-names "^1.2.3"
 
+replicate@^0.15.0:
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/replicate/-/replicate-0.15.0.tgz#3203b27c8d3dad4d3c975204d5db11ac417ecb6a"
+  integrity sha512-QuX/fXpiNC/7spJhwzJhPzwkGpZftf0D8nQ1lBXY4guh4BHVJLv65KYxEvBzHYZZ4zIf30p6Hm066VjzjnH96Q==
+
 resolve-from@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"

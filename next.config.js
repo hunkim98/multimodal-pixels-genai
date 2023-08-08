@@ -56,6 +56,9 @@ const nextConfig = {
     "@spectrum-icons/ui",
     "@spectrum-icons/workflow",
   ],
+  env: {
+    REPLICATE_TOKEN: process.env.REPLICATE_TOKEN,
+  },
 };
 
 module.exports = nextConfig;
