@@ -1,5 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { ModelInputs } from "@/types/replicate";
+import { createImageOutOfNestedColorArray } from "@/utils/image";
 import type { NextApiRequest, NextApiResponse } from "next";
 import Replicate from "replicate";
 

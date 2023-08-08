@@ -30,11 +30,10 @@ import { parseColor } from "@react-stately/color";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ColorWheel } from "@react-spectrum/color";
-import { generateOutputs } from "@/utils/kandinsky";
 import { ModelInputs } from "@/types/replicate";
 import axios from "axios";
-import Head from "next/head";
-import Brush from "@spectrum-icons/workflow/Brush";
+import { imageFileUpload } from "@/utils/upload";
+import { createImageOutOfNestedColorArray } from "@/utils/image";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,7 +41,7 @@ export default function Home() {
   const [isPixelCanvasOpen, setIsPixelCanvasOpen] = useState(false);
   const dottingRef = useRef<DottingRef>(null);
   const [brushTool, setBrushTool] = useState(BrushTool.DOT);
-  let [currentValue, setCurrentValue] = useState(
+  let [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)")
   );
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
@@ -51,7 +50,7 @@ export default function Home() {
   const [userDataArray, setUserDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
   let [finalValue, setFinalValue] = useState(parseColor("hsl(50, 100%, 50%)"));
-  const { clear, setData } = useDotting(dottingRef);
+  const { clear } = useDotting(dottingRef);
   const {
     addDataChangeListener,
     addStrokeEndListener,
@@ -63,13 +62,18 @@ export default function Home() {
     prompt: "A robot sitting on the ground",
     image: undefined,
   });
-  const generateImages = useCallback(() => {
-    axios.post("/api/replicate", modelInputs).then((res) => {
-      const images = res.data as Array<string>;
-      console.log(res.data as Array<string>);
-      setGalleryImages((prev) => [...prev, ...images]);
-    });
-  }, [modelInputs]);
+  const generateImages = useCallback(
+    (imageUrl?: string) => {
+      axios
+        .post("/api/replicate", { ...modelInputs, image: imageUrl })
+        .then((res) => {
+          const images = res.data as Array<string>;
+          console.log(res.data as Array<string>);
+          setGalleryImages((prev) => [...prev, ...images]);
+        });
+    },
+    [modelInputs]
+  );
 
   useEffect(() => {
     const dataChangeListener: CanvasDataChangeHandler = ({ data }) => {
@@ -120,7 +124,7 @@ export default function Home() {
   }, [isPixelCanvasOpen, addStrokeEndListener]);
 
   useEffect(() => {
-    if (recentlyUsedColors.size > 5) {
+    if (recentlyUsedColors.size > 6) {
       const newSet = new Set(recentlyUsedColors);
       newSet.delete(Array.from(recentlyUsedColors)[0]);
       setRecentlyUsedColors(newSet);
@@ -162,7 +166,14 @@ export default function Home() {
                 setModelInputs({ ...modelInputs, prompt: value });
               }}
             />
-            <Button variant="accent" alignSelf={"end"} onPress={generateImages}>
+            <Button
+              variant={"accent"}
+              alignSelf={"end"}
+              isDisabled={isPixelCanvasOpen}
+              onPress={() => {
+                generateImages();
+              }}
+            >
               Generate
             </Button>
           </Flex>
@@ -201,15 +212,15 @@ export default function Home() {
                 <div className="bg-white">
                   <Dotting
                     ref={dottingRef}
-                    width={300}
-                    height={300}
+                    width={350}
+                    height={350}
                     initData={userDataArray}
                     style={{
                       border: "none",
                     }}
                   />
                 </div>
-                <div className="flex flex-col align-middle px-3 pt-3">
+                <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
                   <Flex justifyContent={"space-between"}>
                     <Button
                       width={"size-1200"}
@@ -245,17 +256,21 @@ export default function Home() {
                     </Button>
                   </Flex>
                   <ColorWheel
-                    UNSAFE_className="my-5"
+                    size={150}
+                    UNSAFE_className="my-5 mx-auto"
                     defaultValue="hsl(30, 100%, 50%)"
-                    value={currentValue}
-                    onChange={setCurrentValue}
+                    value={changingColor}
+                    onChange={(color) => {
+                      setChangingColor(color);
+                      changeBrushTool(BrushTool.DOT);
+                    }}
                     onChangeEnd={setFinalValue}
                   />
                   <Flex direction="column">
                     <Text UNSAFE_className="text-xs mb-1">
                       Recently Used Colors
                     </Text>
-                    <Flex gap="size-100">
+                    <Flex gap="size-100" wrap>
                       {Array.from(recentlyUsedColors).map((color) => (
                         <div
                           key={color}
@@ -264,12 +279,33 @@ export default function Home() {
                             backgroundColor: color,
                           }}
                           onClick={() => {
-                            setFinalValue(parseColor(color));
+                            const newColor = parseColor(color);
+                            changeBrushTool(BrushTool.DOT);
+                            setFinalValue(newColor);
                           }}
                         />
                       ))}
                     </Flex>
                   </Flex>
+                  <p className="grow"></p>
+                  <Button
+                    UNSAFE_style={{
+                      fontSize: "12px",
+                    }}
+                    variant="accent"
+                    onPress={() => {
+                      if (userDataArray) {
+                        imageFileUpload(
+                          createImageOutOfNestedColorArray(userDataArray)
+                        ).then((url) => {
+                          console.log(url);
+                        });
+                      }
+                      // generateImages(userDataArray);
+                    }}
+                  >
+                    Generate with text + canvas
+                  </Button>
                 </div>
               </div>
             )}

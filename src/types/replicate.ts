@@ -1,7 +1,9 @@
+import { PixelModifyItem } from "dotting";
+
 export type ModelInputs = {
   prompt: string;
   negative_prompt?: string;
-  image?: File;
+  image?: string;
   seed?: number;
   num_outputs?: number;
   width?: number;

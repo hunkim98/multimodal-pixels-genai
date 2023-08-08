@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@adobe/react-spectrum": "^3.28.0",
+    "@napi-rs/canvas": "^0.1.42",
     "@react-spectrum/color": "^3.0.0-beta.23",
     "@spectrum-icons/workflow": "^4.2.2",
     "@types/node": "20.4.8",
@@ -27,5 +28,8 @@
     "replicate": "^0.15.0",
     "tailwindcss": "3.3.3",
     "typescript": "5.1.6"
+  },
+  "devDependencies": {
+    "@types/aws-sdk": "^2.7.0"
   }
 }
