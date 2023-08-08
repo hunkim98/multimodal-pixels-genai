@@ -9,11 +9,7 @@ export const imageFileUpload = async (file: Blob) => {
       secretAccessKey: process.env.S3_SECRET_KEY!,
     },
   });
-  console.log(
-    process.env.S3_REGION,
-    process.env.S3_ACCESS_KEY,
-    process.env.S3_SECRET_KEY
-  );
+
   const s3 = new AWS.S3({
     region: process.env.S3_REGION,
     credentials: {

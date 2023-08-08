@@ -6,11 +6,19 @@ import {
   Text,
   Image,
   Heading,
+  Slider,
+  Switch,
+  ToggleButton,
+  Content,
+  ContextualHelp,
+  ProgressCircle,
 } from "@adobe/react-spectrum";
 import ChveronRightMedium from "@spectrum-icons/ui/ChevronRightMedium";
 import BrushIcon from "@spectrum-icons/workflow/Brush";
 import EraserIcon from "@spectrum-icons/workflow/Erase";
 import DeleteIcon from "@spectrum-icons/workflow/Delete";
+import UndoIcon from "@spectrum-icons/workflow/Undo";
+import RedoIcon from "@spectrum-icons/workflow/Redo";
 import {
   BrushTool,
   CanvasBrushChangeHandler,
@@ -33,7 +41,15 @@ import { ColorWheel } from "@react-spectrum/color";
 import { ModelInputs } from "@/types/replicate";
 import axios from "axios";
 import { imageFileUpload } from "@/utils/upload";
-import { createImageOutOfNestedColorArray } from "@/utils/image";
+import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
+import {
+  brushSizeFive,
+  brushSizeFour,
+  brushSizeOne,
+  brushSizeThree,
+  brushSizeTwo,
+} from "@/utils/brush";
+import { blob } from "stream/consumers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,14 +66,25 @@ export default function Home() {
   const [userDataArray, setUserDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
   let [finalValue, setFinalValue] = useState(parseColor("hsl(50, 100%, 50%)"));
-  const { clear } = useDotting(dottingRef);
+  const [isGridVisible, setIsGridVisible] = useState(true);
+  const { clear, undo, redo } = useDotting(dottingRef);
+  const [isModelActive, setIsModelActive] = useState(false);
   const {
     addDataChangeListener,
     addStrokeEndListener,
     addBrushChangeListener,
   } = useHandlers(dottingRef);
-  const { changeBrushColor, changeBrushTool } = useBrush(dottingRef);
-  const [galleryImage, setGalleryImages] = useState<Array<string>>([]);
+  const [brushSize, setBrushSize] = useState(1);
+  const { changeBrushColor, changeBrushTool, changeBrushPattern } =
+    useBrush(dottingRef);
+  const [galleryImage, setGalleryImages] = useState<Array<string>>([
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/07cfe359-de1a-479c-829b-2d2ec8a2d6c5-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/96f0f0b5-df1b-4dd8-9afc-9f4aa19a40b4-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/9ee9d9df-c2ec-49e4-aaff-19d4c2328bdc-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/756e4d6c-349c-4dbc-9de8-48d44498298d-image.png",
+  ]);
   const [modelInputs, setModelInputs] = useState<ModelInputs>({
     prompt: "A robot sitting on the ground",
     image: undefined,
@@ -68,12 +95,37 @@ export default function Home() {
         .post("/api/replicate", { ...modelInputs, image: imageUrl })
         .then((res) => {
           const images = res.data as Array<string>;
-          console.log(res.data as Array<string>);
           setGalleryImages((prev) => [...prev, ...images]);
+          setIsModelActive(false);
+        })
+        .catch((err) => {
+          setIsModelActive(false);
         });
     },
     [modelInputs]
   );
+  useEffect(() => {
+    switch (brushSize) {
+      case 1:
+        changeBrushPattern(brushSizeOne);
+        break;
+      case 2:
+        changeBrushPattern(brushSizeTwo);
+        break;
+      case 3:
+        changeBrushPattern(brushSizeThree);
+        break;
+      case 4:
+        changeBrushPattern(brushSizeFour);
+        break;
+      case 5:
+        changeBrushPattern(brushSizeFive);
+        break;
+      default:
+        changeBrushPattern(brushSizeOne);
+        break;
+    }
+  }, [brushSize, changeBrushPattern]);
 
   useEffect(() => {
     const dataChangeListener: CanvasDataChangeHandler = ({ data }) => {
@@ -168,13 +220,48 @@ export default function Home() {
             />
             <Button
               variant={"accent"}
+              UNSAFE_style={{
+                // backgroundColor: "#000000",
+                cursor: "pointer",
+              }}
+              isDisabled={isModelActive}
               alignSelf={"end"}
-              isDisabled={isPixelCanvasOpen}
               onPress={() => {
-                generateImages();
+                setIsModelActive(true);
+                if (!isPixelCanvasOpen) {
+                  generateImages();
+                } else {
+                  if (userDataArray) {
+                    blobToBase64(
+                      createImageOutOfNestedColorArray(userDataArray)
+                    )
+                      .then((base64String) => {
+                        generateImages(base64String as string);
+                      })
+                      .catch((err) => {
+                        setIsModelActive(false);
+                      });
+                    // imageFileUpload(
+                    //   createImageOutOfNestedColorArray(userDataArray)
+                    // ).then((url) => {
+                    //   generateImages(url);
+                    // });
+                  } else {
+                    generateImages();
+                  }
+                }
+                setIsPixelCanvasOpen(false);
               }}
             >
-              Generate
+              {isModelActive ? (
+                <ProgressCircle
+                  size="S"
+                  aria-label="Loading…"
+                  isIndeterminate
+                />
+              ) : (
+                <>Generate</>
+              )}
             </Button>
           </Flex>
           <div
@@ -200,8 +287,9 @@ export default function Home() {
                   fontWeight: "bold",
                 }}
               >
-                {isPixelCanvasOpen ? "Close" : "Open"} Supplementary Pixel
-                Canvas
+                {isPixelCanvasOpen
+                  ? "Close supplementary pixel canvas"
+                  : "Generate Images with supplementary pixel image"}
               </Text>
             </Flex>
             {isPixelCanvasOpen && (
@@ -214,6 +302,7 @@ export default function Home() {
                     ref={dottingRef}
                     width={350}
                     height={350}
+                    isGridVisible={isGridVisible}
                     initData={userDataArray}
                     style={{
                       border: "none",
@@ -221,28 +310,72 @@ export default function Home() {
                   />
                 </div>
                 <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
-                  <Flex justifyContent={"space-between"}>
-                    <Button
-                      width={"size-1200"}
-                      variant="primary"
+                  <Flex justifyContent={"space-between"} alignItems={"center"}>
+                    <Flex alignItems={"center"}>
+                      <Switch
+                        isSelected={isGridVisible}
+                        onChange={setIsGridVisible}
+                      />
+                      <Text
+                        UNSAFE_className="text-[12px]"
+                        UNSAFE_style={{
+                          marginLeft: "-5px",
+                        }}
+                      >
+                        Show Grids
+                      </Text>
+                    </Flex>
+                    <ContextualHelp variant="info">
+                      <Heading>How to use?</Heading>
+                      <Content>
+                        <Text>
+                          The pixel canvas is a supplementary tool to help you
+                          give the model a rough image input to refer to when
+                          generating images. You are free to pan and zoom the
+                          canvas
+                        </Text>
+                      </Content>
+                    </ContextualHelp>
+                  </Flex>
+                  <Flex
+                    justifyContent={"space-between"}
+                    UNSAFE_className="mt-1"
+                  >
+                    <ToggleButton
+                      width={"size-600"}
+                      isSelected={brushTool === BrushTool.DOT}
                       onPress={() => {
-                        if (brushTool === BrushTool.ERASER) {
-                          changeBrushTool(BrushTool.DOT);
-                        } else {
-                          changeBrushTool(BrushTool.ERASER);
-                        }
+                        changeBrushTool(BrushTool.DOT);
                       }}
                     >
-                      {brushTool === BrushTool.ERASER ? (
-                        <EraserIcon />
-                      ) : (
-                        <BrushIcon />
-                      )}
-                      <Text UNSAFE_className="ml-1">
-                        {brushTool === BrushTool.ERASER ? "Eraser" : "Brush"}
-                      </Text>
+                      <BrushIcon />
+                    </ToggleButton>
+                    <ToggleButton
+                      isSelected={brushTool === BrushTool.ERASER}
+                      width={"size-600"}
+                      onPress={() => {
+                        changeBrushTool(BrushTool.ERASER);
+                      }}
+                    >
+                      <EraserIcon />
+                    </ToggleButton>
+                    <Button
+                      variant="secondary"
+                      onPress={() => {
+                        undo();
+                      }}
+                    >
+                      <UndoIcon />
                     </Button>
                     <Button
+                      variant="secondary"
+                      onPress={() => {
+                        redo();
+                      }}
+                    >
+                      <RedoIcon />
+                    </Button>
+                    {/* <Button
                       width={"size-600"}
                       variant="secondary"
                       onPress={() => clear()}
@@ -253,10 +386,23 @@ export default function Home() {
                           opacity: 0.5,
                         }}
                       />
-                    </Button>
+                    </Button> */}
                   </Flex>
+                  <Slider
+                    labelPosition="side"
+                    label="brush size"
+                    showValueLabel={false}
+                    UNSAFE_className="mt-1"
+                    defaultValue={1}
+                    value={brushSize}
+                    onChange={(value) => {
+                      setBrushSize(value);
+                    }}
+                    minValue={1}
+                    maxValue={5}
+                  />
                   <ColorWheel
-                    size={150}
+                    size={130}
                     UNSAFE_className="my-5 mx-auto"
                     defaultValue="hsl(30, 100%, 50%)"
                     value={changingColor}
@@ -266,6 +412,7 @@ export default function Home() {
                     }}
                     onChangeEnd={setFinalValue}
                   />
+
                   <Flex direction="column">
                     <Text UNSAFE_className="text-xs mb-1">
                       Recently Used Colors
@@ -287,25 +434,6 @@ export default function Home() {
                       ))}
                     </Flex>
                   </Flex>
-                  <p className="grow"></p>
-                  <Button
-                    UNSAFE_style={{
-                      fontSize: "12px",
-                    }}
-                    variant="accent"
-                    onPress={() => {
-                      if (userDataArray) {
-                        imageFileUpload(
-                          createImageOutOfNestedColorArray(userDataArray)
-                        ).then((url) => {
-                          console.log(url);
-                        });
-                      }
-                      // generateImages(userDataArray);
-                    }}
-                  >
-                    Generate with text + canvas
-                  </Button>
                 </div>
               </div>
             )}
@@ -314,9 +442,10 @@ export default function Home() {
       </div>
       <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">
         <Text UNSAFE_className="text-lg font-bold">Generated Images</Text>
-        <Flex gap="size-100">
+        <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
           {galleryImage.map((image) => (
             <Image
+              UNSAFE_className="mb-4"
               alt={"image"}
               key={image}
               src={image}
@@ -324,7 +453,7 @@ export default function Home() {
               height={300}
             />
           ))}
-        </Flex>
+        </div>
       </Flex>
     </main>
   );

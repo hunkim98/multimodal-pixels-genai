@@ -40,7 +40,7 @@ export const generateOutputs = async ({
         negative_prompt,
         image,
         seed,
-        num_outputs: 1,
+        num_outputs: 3,
         width: width ? width : 512, // 128 is the smallest size
         height: height ? height : 512,
         num_steps_prior: 50,
@@ -48,6 +48,5 @@ export const generateOutputs = async ({
     },
     (progress) => console.log("progress", progress)
   );
-  console.log("output", output);
   return output;
 };

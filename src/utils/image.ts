@@ -38,3 +38,13 @@ export const createImageOutOfNestedColorArray = (
   const file = new Blob([new Uint8Array(array)], { type: "image/png" });
   return file;
 };
+
+export const blobToBase64 = (blob: Blob) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+  return new Promise((resolve) => {
+    reader.onloadend = () => {
+      resolve(reader.result);
+    };
+  });
+};
