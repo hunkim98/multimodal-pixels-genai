@@ -28,6 +28,7 @@ export const generateOutputs = async ({
   image,
   seed,
   num_outputs,
+  strength,
   width,
   height,
 }: ModelInputs) => {
@@ -37,7 +38,10 @@ export const generateOutputs = async ({
       input: {
         task: image ? "text_guided_img2img" : "text2img",
         prompt,
-        negative_prompt,
+        negative_prompt: negative_prompt
+          ? negative_prompt
+          : "low quality, bad quality, bad resolution",
+        strength,
         image,
         seed,
         num_outputs: 3,

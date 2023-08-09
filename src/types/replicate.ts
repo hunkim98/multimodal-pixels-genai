@@ -5,6 +5,7 @@ export type ModelInputs = {
   negative_prompt?: string;
   image?: string;
   seed?: number;
+  strength?: number;
   num_outputs?: number;
   width?: number;
   height?: number;
