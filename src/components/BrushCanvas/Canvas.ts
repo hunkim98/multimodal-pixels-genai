@@ -324,7 +324,43 @@ export class Canvas extends EventDispatcher {
     }
   }
 
-  extendCanvasDiagonally(direction: ButtonDirection, extendCoord: Coord) {}
+  extendCanvasDiagonally(direction: ButtonDirection, extendCoord: Coord) {
+    if (!this.mouseDownWorldPos) return;
+    if (!this.capturedCanvasInfo) return;
+    const heightExtensionOffset =
+      direction === ButtonDirection.TOPLEFT ||
+      direction === ButtonDirection.TOPRIGHT
+        ? this.mouseDownWorldPos!.y - extendCoord.y
+        : extendCoord.y - this.mouseDownWorldPos!.y;
+    const widthExtensionOffset =
+      direction === ButtonDirection.TOPLEFT ||
+      direction === ButtonDirection.BOTTOMLEFT
+        ? this.mouseDownWorldPos!.x - extendCoord.x
+        : extendCoord.x - this.mouseDownWorldPos!.x;
+    const newWidth = this.capturedCanvasInfo.width + widthExtensionOffset;
+    const newHeight = this.capturedCanvasInfo.height + heightExtensionOffset;
+    if (direction === ButtonDirection.TOPLEFT) {
+      this.canvasInfo.lefTopY =
+        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
+      this.canvasInfo.lefTopX =
+        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.setCanvasHeight(newHeight);
+      this.setCanvasWidth(newWidth);
+    } else if (direction === ButtonDirection.TOPRIGHT) {
+      this.canvasInfo.lefTopY =
+        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
+      this.setCanvasHeight(newHeight);
+      this.setCanvasWidth(newWidth);
+    } else if (direction === ButtonDirection.BOTTOMLEFT) {
+      this.canvasInfo.lefTopX =
+        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.setCanvasHeight(newHeight);
+      this.setCanvasWidth(newWidth);
+    } else if (direction === ButtonDirection.BOTTOMRIGHT) {
+      this.setCanvasHeight(newHeight);
+      this.setCanvasWidth(newWidth);
+    }
+  }
 
   handleWheel = (e: WheelEvent) => {
     e.preventDefault();
@@ -422,12 +458,16 @@ export class Canvas extends EventDispatcher {
           this.extendCanvasSideWays(buttonDirection, mouseCartCoord);
           break;
         case ButtonDirection.TOPLEFT:
+          this.extendCanvasDiagonally(buttonDirection, mouseCartCoord);
           break;
         case ButtonDirection.TOPRIGHT:
+          this.extendCanvasDiagonally(buttonDirection, mouseCartCoord);
           break;
         case ButtonDirection.BOTTOMLEFT:
+          this.extendCanvasDiagonally(buttonDirection, mouseCartCoord);
           break;
         case ButtonDirection.BOTTOMRIGHT:
+          this.extendCanvasDiagonally(buttonDirection, mouseCartCoord);
           break;
 
         default:
