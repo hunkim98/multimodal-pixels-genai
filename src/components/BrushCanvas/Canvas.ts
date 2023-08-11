@@ -239,7 +239,6 @@ export class Canvas extends EventDispatcher {
             this.panZoom,
             this.dpr
         )
-        console.log(mouseCartCoord)
         this.mouseDownWorldPos = {
             x: mouseCartCoord.x,
             y: mouseCartCoord.y,
@@ -416,6 +415,7 @@ export class Canvas extends EventDispatcher {
 
     render() {
         this.clear();
+
         this.ctx.save();
         this.ctx.fillStyle = "#999999";
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -429,6 +429,17 @@ export class Canvas extends EventDispatcher {
             convertedLeftTopScreenPoint,
             this.panZoom
         )
+        // clipping
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.moveTo(correctedLeftTopScreenPoint.x, correctedLeftTopScreenPoint.y);
+        this.ctx.lineTo(this.canvasWidth * this.panZoom.scale + correctedLeftTopScreenPoint.x, correctedLeftTopScreenPoint.y);
+        this.ctx.lineTo(this.canvasWidth * this.panZoom.scale + correctedLeftTopScreenPoint.x, this.canvasHeight * this.panZoom.scale + correctedLeftTopScreenPoint.y);
+        this.ctx.lineTo(correctedLeftTopScreenPoint.x, this.canvasHeight * this.panZoom.scale + correctedLeftTopScreenPoint.y);
+        this.ctx.lineTo(correctedLeftTopScreenPoint.x, correctedLeftTopScreenPoint.y);
+        this.ctx.clip();
+
+        // background
         this.ctx.save();
         this.ctx.fillStyle = "#FFFFFF";
         this.ctx.fillRect(
@@ -462,11 +473,11 @@ export class Canvas extends EventDispatcher {
                 }
             }
             this.ctx.stroke();
-
-
-
         }
         this.ctx.restore();
+        this.ctx.restore();
+
+
 
     }
 }
