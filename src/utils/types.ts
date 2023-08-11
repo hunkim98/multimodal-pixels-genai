@@ -66,6 +66,7 @@ export type CanvasGridChangeParams = {
     };
 };
 
+
 export enum MouseMode {
     PANNING = "PANNING",
     EXTENDING = "EXTENDING",

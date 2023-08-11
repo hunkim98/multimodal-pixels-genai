@@ -1,72 +1,112 @@
-import React, { useEffect, useRef, useState } from 'react'
-import Canvas from './Canvas';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Canvas from "./Canvas";
 
 export interface BrushCanvasProps {
-    width: number | string;
-    height: number | string;
-    canvasWidth: number;
-    canvasHeight: number;
-    style?: React.CSSProperties;
-    brushColor?: string;
+  width: number | string;
+  height: number | string;
+  canvasWidth: number;
+  canvasHeight: number;
+  canvasLeftTopX?: number;
+  canvasLeftTopY?: number;
+  style?: React.CSSProperties;
+  brushColor?: string;
 }
 
-const BrushCanvas: React.FC<BrushCanvasProps> = (props) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
-    const [editor, setEditor] = useState<Canvas | null>(null);
+const BrushCanvas: React.FC<BrushCanvasProps> = props => {
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  const [editor, setEditor] = useState<Canvas | null>(null);
+  const [interactionCanvas, setInteractionCanvas] =
+    useState<HTMLCanvasElement | null>(null);
+  const [backgroundCanvas, setBackgroundCanvas] =
+    useState<HTMLCanvasElement | null>(null);
 
-    useEffect(() => {
-        const onResize = () => {
-            if (containerRef.current && editor) {
-                const dpr = window.devicePixelRatio;
-                const rect = containerRef.current.getBoundingClientRect();
-                editor.setSize(rect.width, rect.height, dpr);
-                editor.scale(dpr, dpr);
-                editor.render();
-            }
-        };
-        onResize();
-        window.addEventListener("resize", onResize);
-        return () => {
-            window.removeEventListener("resize", onResize);
-        };
-    }, [editor, containerRef, props.height, props.width]);
+  const gotInteractionCanvasRef = useCallback((element: HTMLCanvasElement) => {
+    if (!element) {
+      return;
+    }
+    element.style["touchAction"] = "none";
+    setInteractionCanvas(element);
+  }, []);
 
-    useEffect(() => {
-        if (canvasRef.current && backgroundCanvasRef.current) {
-            const canvas = new Canvas(canvasRef.current, backgroundCanvasRef.current, props.canvasWidth, props.canvasHeight);
-            setEditor(canvas);
-        }
-    }, [canvasRef, backgroundCanvasRef]);
+  const gotBackgroundCanvasRef = useCallback((element: HTMLCanvasElement) => {
+    if (!element) {
+      return;
+    }
+    element.style["touchAction"] = "none";
+    setBackgroundCanvas(element);
+  }, []);
 
-    return (
-        <div
-            style={{
-                width: props.width,
-                height: props.height,
-                position: 'relative',
-                outline: 'none',
-            }}
-            ref={containerRef}
-            tabIndex={1}
-            onMouseDown={() => {
-                containerRef.current?.focus();
-            }}>
-            <canvas ref={backgroundCanvasRef} style={{
-                touchAction: 'none',
-                position: "absolute",
+  useEffect(() => {
+    const onResize = () => {
+      if (containerRef.current && editor) {
+        const dpr = window.devicePixelRatio;
+        const rect = containerRef.current.getBoundingClientRect();
+        editor.setSize(rect.width, rect.height, dpr);
+        editor.scale(dpr, dpr);
+        editor.render();
+      }
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+    };
+  }, [editor, containerRef, props.height, props.width]);
 
-                ...props.style,
-            }} />
-            <canvas ref={canvasRef} style={{
-                position: "absolute",
+  useEffect(() => {
+    if (!interactionCanvas || !backgroundCanvas) {
+      return;
+    }
 
-                ...props.style,
-            }} />
-        </div>
-    )
-}
+    const canvas = new Canvas(
+      interactionCanvas,
+      backgroundCanvas,
+      props.canvasWidth,
+      props.canvasHeight,
+      props.canvasLeftTopX,
+      props.canvasLeftTopY,
+    );
+    setEditor(canvas);
 
-export default BrushCanvas
+    return () => {
+      editor?.destroy();
+    };
+  }, [backgroundCanvas, interactionCanvas]);
+
+  return (
+    <div
+      style={{
+        width: props.width,
+        height: props.height,
+        position: "relative",
+        outline: "none",
+      }}
+      ref={containerRef}
+      tabIndex={1}
+      onMouseDown={() => {
+        containerRef.current?.focus();
+      }}
+    >
+      <canvas
+        ref={gotBackgroundCanvasRef}
+        style={{
+          touchAction: "none",
+          position: "absolute",
+
+          ...props.style,
+        }}
+      />
+      <canvas
+        ref={gotInteractionCanvasRef}
+        style={{
+          position: "absolute",
+
+          ...props.style,
+        }}
+      />
+    </div>
+  );
+};
+
+export default BrushCanvas;
