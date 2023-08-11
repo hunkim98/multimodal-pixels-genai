@@ -66,6 +66,12 @@ export type CanvasGridChangeParams = {
     };
 };
 
+export enum MouseMode {
+    PANNING = "PANNING",
+    EXTENDING = "EXTENDING",
+    DRAWING = "DRAWING",
+}
+
 export enum ButtonDirection {
     TOP = "TOP",
     BOTTOM = "BOTTOM",

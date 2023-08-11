@@ -52,6 +52,8 @@ import {
   brushSizeTwo,
 } from "@/utils/brush";
 import { blob } from "stream/consumers";
+import OutlineCanvas from "@/components/OutlineCanvas";
+import BrushCanvas from "@/components/BrushCanvas";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -333,7 +335,7 @@ export default function Home() {
                   </Flex>
                   <Flex direction="row" gap="size-100">
                     <div className="bg-white">
-                      <Dotting
+                      {/* <Dotting
                         ref={dottingRef}
                         width={350}
                         height={350}
@@ -342,7 +344,8 @@ export default function Home() {
                         style={{
                           border: "none",
                         }}
-                      />
+                      /> */}
+                      <BrushCanvas width={350} height={350} canvasWidth={150} canvasHeight={150} />
                     </div>
                     <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
                       <Flex
@@ -413,18 +416,6 @@ export default function Home() {
                         >
                           <RedoIcon />
                         </Button>
-                        {/* <Button
-                      width={"size-600"}
-                      variant="secondary"
-                      onPress={() => clear()}
-                    >
-                      <DeleteIcon
-                        size="XXS"
-                        UNSAFE_style={{
-                          opacity: 0.5,
-                        }}
-                      />
-                    </Button> */}
                       </Flex>
                       <Slider
                         labelPosition="side"

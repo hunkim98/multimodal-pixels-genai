@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-types */
+
 class Event {
     private name: string;
 

@@ -165,3 +165,37 @@ export const returnScrollOffsetFromMouseOffset = (
 
     return offset;
 };
+
+export const getAreaTopLeftAndBottomRight = (area: {
+    startWorldPos: Coord;
+    endWorldPos: Coord;
+}) => {
+    const isAreaFromLeftToRight = area.startWorldPos.x < area.endWorldPos.x;
+    const isAreaFromTopToBottom = area.startWorldPos.y < area.endWorldPos.y;
+    // To ease the algorithm, we will first identify the left top, right top, left bottom and right bottom points
+
+    const areaTopLeftPos = {
+        x: isAreaFromLeftToRight ? area.startWorldPos.x : area.endWorldPos.x,
+        y: isAreaFromTopToBottom ? area.startWorldPos.y : area.endWorldPos.y,
+    };
+    const areaBottomRightPos = {
+        x: isAreaFromLeftToRight ? area.endWorldPos.x : area.startWorldPos.x,
+        y: isAreaFromTopToBottom ? area.endWorldPos.y : area.startWorldPos.y,
+    };
+    return { areaTopLeftPos, areaBottomRightPos };
+};
+
+export const getIsPointInsideRegion = (
+    point: Coord,
+    area: { startWorldPos: Coord; endWorldPos: Coord },
+) => {
+    const { areaTopLeftPos, areaBottomRightPos } =
+        getAreaTopLeftAndBottomRight(area);
+
+    return (
+        point.x >= areaTopLeftPos.x &&
+        point.x <= areaBottomRightPos.x &&
+        point.y >= areaTopLeftPos.y &&
+        point.y <= areaBottomRightPos.y
+    );
+};
