@@ -68,10 +68,10 @@ export default function Home() {
   const dottingRef = useRef<DottingRef>(null);
   const [brushTool, setBrushTool] = useState(BrushTool.DOT);
   let [changingColor, setChangingColor] = useState(
-    parseColor("hsl(50, 100%, 50%)")
+    parseColor("hsl(50, 100%, 50%)"),
   );
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [userDataArray, setUserDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
@@ -105,16 +105,16 @@ export default function Home() {
     (imageUrl?: string) => {
       axios
         .post("/api/replicate", { ...modelInputs, image: imageUrl })
-        .then((res) => {
+        .then(res => {
           const images = res.data as Array<string>;
-          setGalleryImages((prev) => [...prev, ...images]);
+          setGalleryImages(prev => [...prev, ...images]);
           setIsModelActive(false);
         })
-        .catch((err) => {
+        .catch(err => {
           setIsModelActive(false);
         });
     },
-    [modelInputs]
+    [modelInputs],
   );
   useEffect(() => {
     switch (brushSize) {
@@ -177,7 +177,7 @@ export default function Home() {
     }) => {
       if (strokeTool === BrushTool.DOT) {
         const color = strokedPixels[strokedPixels.length - 1].color;
-        setRecentlyUsedColors((prev) => {
+        setRecentlyUsedColors(prev => {
           const newSet = new Set(prev);
           newSet.add(color);
           return newSet;
@@ -204,7 +204,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isPixelCanvasOpen) {
-      setBrushTool((prev) => {
+      setBrushTool(prev => {
         if (prev !== BrushTool.DOT) {
           return BrushTool.DOT;
         }
@@ -226,7 +226,7 @@ export default function Home() {
               label="Start with a detailed description"
               width={"size-6000"}
               value={modelInputs.prompt}
-              onChange={(value) => {
+              onChange={value => {
                 setModelInputs({ ...modelInputs, prompt: value });
               }}
             />
@@ -245,12 +245,12 @@ export default function Home() {
                 } else {
                   if (userDataArray) {
                     blobToBase64(
-                      createImageOutOfNestedColorArray(userDataArray)
+                      createImageOutOfNestedColorArray(userDataArray),
                     )
-                      .then((base64String) => {
+                      .then(base64String => {
                         generateImages(base64String as string);
                       })
-                      .catch((err) => {
+                      .catch(err => {
                         setIsModelActive(false);
                       });
                     // imageFileUpload(
@@ -295,7 +295,7 @@ export default function Home() {
             {isPixelCanvasOpen && (
               <div
                 className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
               >
                 <Flex direction="column" gap="size-100">
                   <Flex gap="size-100" UNSAFE_className="px-2 mt-1">
@@ -335,7 +335,7 @@ export default function Home() {
                   </Flex>
                   <Flex direction="row" gap="size-100">
                     <div className="bg-white">
-                      {/* <Dotting
+                      <Dotting
                         ref={dottingRef}
                         width={350}
                         height={350}
@@ -344,8 +344,8 @@ export default function Home() {
                         style={{
                           border: "none",
                         }}
-                      /> */}
-                      <BrushCanvas width={350} height={350} canvasWidth={150} canvasHeight={150} />
+                      />
+                      {/* <BrushCanvas width={350} height={350} canvasWidth={150} canvasHeight={150} /> */}
                     </div>
                     <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
                       <Flex
@@ -424,7 +424,7 @@ export default function Home() {
                         UNSAFE_className="mt-1"
                         defaultValue={1}
                         value={brushSize}
-                        onChange={(value) => {
+                        onChange={value => {
                           setBrushSize(value);
                         }}
                         minValue={1}
@@ -435,7 +435,7 @@ export default function Home() {
                         UNSAFE_className="my-5 mx-auto"
                         defaultValue="hsl(30, 100%, 50%)"
                         value={changingColor}
-                        onChange={(color) => {
+                        onChange={color => {
                           setChangingColor(color);
                           changeBrushTool(BrushTool.DOT);
                         }}
@@ -447,7 +447,7 @@ export default function Home() {
                           Recently Used Colors
                         </Text>
                         <Flex gap="size-100" wrap>
-                          {Array.from(recentlyUsedColors).map((color) => (
+                          {Array.from(recentlyUsedColors).map(color => (
                             <div
                               key={color}
                               className={`w-6 h-6 rounded-full`}
@@ -474,7 +474,7 @@ export default function Home() {
       <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">
         <Text UNSAFE_className="text-lg font-bold">Generated Images</Text>
         <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
-          {galleryImage.map((image) => (
+          {galleryImage.map(image => (
             <Image
               UNSAFE_className="mb-4"
               alt={"image"}
