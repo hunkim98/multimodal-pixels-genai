@@ -63,7 +63,7 @@ export default function Home() {
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
-    useState<AssistiveImageInputType>(AssistiveImageInputType.PIXELS);
+    useState<AssistiveImageInputType>(AssistiveImageInputType.SKETCH);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
@@ -156,21 +156,40 @@ export default function Home() {
                         .catch(err => {
                           setIsModelActive(false);
                         });
-                    } else {
-                      generateImages();
+                      return;
                     }
                   }
-                  if (brushCanvasImageBlob) {
-                    blobToBase64(brushCanvasImageBlob)
-                      .then(base64String => {
-                        generateImages(base64String as string);
-                      })
-                      .catch(err => {
-                        setIsModelActive(false);
-                      });
-                  } else {
-                    generateImages();
+                  if (
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.BRUSH
+                  ) {
+                    if (brushCanvasImageBlob) {
+                      blobToBase64(brushCanvasImageBlob)
+                        .then(base64String => {
+                          generateImages(base64String as string);
+                        })
+                        .catch(err => {
+                          setIsModelActive(false);
+                        });
+                      return;
+                    }
                   }
+                  if (
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.SKETCH
+                  ) {
+                    if (sketchCanvasImageBlob) {
+                      blobToBase64(sketchCanvasImageBlob)
+                        .then(base64String => {
+                          generateImages(base64String as string);
+                        })
+                        .catch(err => {
+                          setIsModelActive(false);
+                        });
+                      return;
+                    }
+                  }
+                  generateImages();
                 }
                 // setIsAssistiveCanvasOpen(false);
               }}
