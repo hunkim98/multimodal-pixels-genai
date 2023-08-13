@@ -1,20 +1,28 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Canvas from "./Canvas";
+import Canvas, { BrushData } from "./Canvas";
 import {
+  Button,
   Content,
   ContextualHelp,
   Flex,
   Heading,
   Text,
+  ToggleButton,
 } from "@adobe/react-spectrum";
+import { PenTool } from "@/utils/types";
+import BrushIcon from "@spectrum-icons/workflow/Brush";
+import EraserIcon from "@spectrum-icons/workflow/Erase";
+import DeleteIcon from "@spectrum-icons/workflow/Delete";
+import UndoIcon from "@spectrum-icons/workflow/Undo";
+import RedoIcon from "@spectrum-icons/workflow/Redo";
 
 export interface BrushCanvasProps {
   canvasWidth?: number;
   canvasHeight?: number;
   canvasLeftTopX?: number;
   canvasLeftTopY?: number;
+  initData?: BrushData;
   style?: React.CSSProperties;
-  brushColor?: string;
 }
 
 const BrushCanvas: React.FC<BrushCanvasProps> = props => {
@@ -25,7 +33,9 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     useState<HTMLCanvasElement | null>(null);
   const [backgroundCanvas, setBackgroundCanvas] =
     useState<HTMLCanvasElement | null>(null);
-
+  const [brushColor, setBrushColor] = useState<string>("#ff0000");
+  const [strokeWidth, setStrokeWidth] = useState<number>(3);
+  const [brushTool, setBrushTool] = useState<PenTool>(PenTool.PEN);
   const gotInteractionCanvasRef = useCallback((element: HTMLCanvasElement) => {
     if (!element) {
       return;
@@ -79,6 +89,47 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     };
   }, [backgroundCanvas, interactionCanvas]);
 
+  const changeBrushColor = useCallback(
+    (color: string) => {
+      if (!editor) {
+        return;
+      }
+      editor?.changeBrushColor(color);
+      setBrushColor(color);
+    },
+    [editor, setBrushColor],
+  );
+
+  const changeStrokeWidth = useCallback(
+    (width: number) => {
+      if (!editor) {
+        return;
+      }
+      editor?.changeStrokeWidth(width);
+      setStrokeWidth(width);
+    },
+    [editor, setStrokeWidth],
+  );
+
+  const changeBrushTool = useCallback(
+    (tool: PenTool) => {
+      if (!editor) {
+        return;
+      }
+      editor?.changeBrushTool(tool);
+      setBrushTool(tool);
+    },
+    [editor, setBrushTool],
+  );
+
+  const undo = useCallback(() => {
+    editor?.undo();
+  }, [editor]);
+
+  const redo = useCallback(() => {
+    editor?.redo();
+  }, [editor]);
+
   return (
     <Flex direction="row" gap="size-100">
       <div className="bg-white">
@@ -126,6 +177,42 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
               </Text>
             </Content>
           </ContextualHelp>
+        </Flex>
+        <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
+          <ToggleButton
+            width={"size-600"}
+            isSelected={brushTool === PenTool.PEN}
+            onPress={() => {
+              changeBrushTool(PenTool.PEN);
+            }}
+          >
+            <BrushIcon />
+          </ToggleButton>
+          <ToggleButton
+            isSelected={brushTool === PenTool.ERASER}
+            width={"size-600"}
+            onPress={() => {
+              changeBrushTool(PenTool.ERASER);
+            }}
+          >
+            <EraserIcon />
+          </ToggleButton>
+          <Button
+            variant="secondary"
+            onPress={() => {
+              undo();
+            }}
+          >
+            <UndoIcon />
+          </Button>
+          <Button
+            variant="secondary"
+            onPress={() => {
+              redo();
+            }}
+          >
+            <RedoIcon />
+          </Button>
         </Flex>
       </div>
     </Flex>

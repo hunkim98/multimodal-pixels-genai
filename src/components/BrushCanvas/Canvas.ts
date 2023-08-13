@@ -6,6 +6,7 @@ import {
   ButtonDirection,
   MouseMode,
   ButtonDimensions,
+  CanvasDataInfo,
 } from "../../utils/types";
 import { TouchyEvent, addEvent, removeEvent, touchy } from "@/utils/touch";
 import {
@@ -27,8 +28,15 @@ import {
   InteractionEdgeTouchingRange,
   InteractionExtensionAllowanceRatio,
 } from "@/utils/config";
+import { Action, ActionType } from "./Action";
+import { BrushColorAction } from "./BrushColorAction";
+import { getNewGUIDString } from "@/utils/guid";
+import { BrushEraseAction } from "./BrushEraseAction";
+import { CanvasSizeChangeAction } from "./CanvasSizeChangeAction";
+import { BrushTool } from "dotting";
 
 export type BrushDataElement = {
+  id: string;
   color: string;
   points: Array<Coord>;
   strokeWidth: number;
@@ -60,13 +68,15 @@ export class Canvas extends EventDispatcher {
   private mouseMoveWorldPos: Coord = { x: 0, y: 0 };
   private previousMouseMoveWorldPos: Coord | null = null;
   private directionToExtendSelectedArea: ButtonDirection | null = null;
-  private canvasInfo = {
+  private undoHistory: Array<Action> = [];
+  private redoHistory: Array<Action> = [];
+  private canvasInfo: CanvasDataInfo = {
     lefTopX: 0,
     lefTopY: 0,
     width: 0,
     height: 0,
   };
-  private capturedCanvasInfo = {
+  private capturedCanvasInfo: CanvasDataInfo = {
     lefTopX: 0,
     lefTopY: 0,
     width: 0,
@@ -368,6 +378,52 @@ export class Canvas extends EventDispatcher {
     }
   }
 
+  undo() {
+    if (this.undoHistory.length === 0) return;
+    const action = this.undoHistory.pop();
+    const inverseAction = action?.createInverseAction();
+    console.log(inverseAction, "inverse action");
+    this.commitAction(inverseAction!);
+    this.redoHistory.push(action!);
+  }
+
+  redo() {
+    if (this.redoHistory.length === 0) return;
+    const action = this.redoHistory.pop();
+    this.commitAction(action!);
+    this.undoHistory.push(action!);
+  }
+
+  commitAction(action: Action) {
+    const type = action.getType();
+    console.log("committing action", type);
+    switch (type) {
+      case ActionType.BrushColor:
+        const brushColorAction = action as BrushColorAction;
+        this.data.push(brushColorAction.getData());
+        break;
+      case ActionType.BrushErase:
+        const brushEraseAction = action as BrushEraseAction;
+        this.data.splice(brushEraseAction.getHistoryIndex(), 1);
+        console.log("erasing", brushEraseAction.getHistoryIndex());
+        break;
+      case ActionType.CanvasSizeChange:
+        const canvasSizeChangeAction = action as CanvasSizeChangeAction;
+        this.canvasInfo = canvasSizeChangeAction.getNewCanvasInfo();
+        break;
+    }
+    this.render();
+  }
+
+  handleKeyDown = (e: KeyboardEvent) => {
+    if (e.code === "KeyZ" && (e.ctrlKey || e.metaKey)) {
+      this.undo();
+    }
+    if (e.code === "KeyY" && (e.ctrlKey || e.metaKey)) {
+      this.redo();
+    }
+  };
+
   handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     if (this.mouseMode === MouseMode.EXTENDING) {
@@ -546,7 +602,8 @@ export class Canvas extends EventDispatcher {
     if (isPointInsideCanvas) {
       const strokeDataPoint: Array<Coord> = [];
       this.data.push({
-        color: this.brushColor,
+        id: getNewGUIDString(),
+        color: this.brushTool === PenTool.PEN ? this.brushColor : "#fff",
         strokeWidth: this.strokeWidth,
         points: strokeDataPoint,
       });
@@ -600,8 +657,46 @@ export class Canvas extends EventDispatcher {
     this.render();
   }
 
+  changeBrushColor(color: string) {
+    this.brushColor = color;
+  }
+
+  changeBrushTool(tool: PenTool) {
+    this.brushTool = tool;
+  }
+
+  changeStrokeWidth(width: number) {
+    this.strokeWidth = width;
+  }
+
+  recordAction(action: Action) {
+    this.undoHistory.push(action);
+    console.log("undoHistory", action);
+    this.redoHistory = [];
+  }
+
   onMouseUp(evt: TouchyEvent) {
     evt.preventDefault();
+    if (this.mouseMode === MouseMode.DRAWING) {
+      console.log("mosue mode was drawing");
+      const recentDrawnStroke = this.data[this.data.length - 1];
+      if (recentDrawnStroke.points.length === 0) {
+        return;
+      }
+      if (this.brushTool === PenTool.PEN) {
+        this.recordAction(
+          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+        );
+      } else {
+        this.recordAction(
+          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+        );
+      }
+    } else if (this.mouseMode === MouseMode.EXTENDING) {
+      this.recordAction(
+        new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
+      );
+    }
     this.mouseMode === MouseMode.PANNING;
     touchy(this.element, removeEvent, "mousemove", this.handlePanning);
     touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
@@ -619,6 +714,24 @@ export class Canvas extends EventDispatcher {
   onMouseOut(evt: TouchyEvent) {
     evt.preventDefault();
     this.currentBrushPoints = null;
+    if (this.mouseMode === MouseMode.DRAWING) {
+      const recentDrawnStroke = this.data[this.data.length - 1];
+      if (this.brushTool === PenTool.PEN) {
+        if (recentDrawnStroke.points.length === 0) {
+          this.recordAction(
+            new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+          );
+        }
+      } else {
+        this.recordAction(
+          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+        );
+      }
+    } else if (this.mouseMode === MouseMode.EXTENDING) {
+      this.recordAction(
+        new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
+      );
+    }
     touchy(this.element, removeEvent, "mousemove", this.handlePanning);
     touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
     touchy(this.element, removeEvent, "mousemove", this.handleExtension);
