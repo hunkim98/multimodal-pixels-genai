@@ -54,6 +54,7 @@ import {
 import { blob } from "stream/consumers";
 import OutlineCanvas from "@/components/OutlineCanvas";
 import BrushCanvas from "@/components/BrushCanvas";
+import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -73,7 +74,7 @@ export default function Home() {
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
-  const [userDataArray, setUserDataArray] =
+  const [initialPixelDataArray, setInitialPixelDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
   let [finalValue, setFinalValue] = useState(parseColor("hsl(50, 100%, 50%)"));
   const [isGridVisible, setIsGridVisible] = useState(true);
@@ -165,7 +166,7 @@ export default function Home() {
         }
         tempArray.push(row);
       }
-      setUserDataArray(tempArray);
+      setInitialPixelDataArray(tempArray);
     };
     addDataChangeListener(dataChangeListener);
   }, [isPixelCanvasOpen, addDataChangeListener]);
@@ -243,9 +244,9 @@ export default function Home() {
                 if (!isPixelCanvasOpen) {
                   generateImages();
                 } else {
-                  if (userDataArray) {
+                  if (initialPixelDataArray) {
                     blobToBase64(
-                      createImageOutOfNestedColorArray(userDataArray),
+                      createImageOutOfNestedColorArray(initialPixelDataArray),
                     )
                       .then(base64String => {
                         generateImages(base64String as string);
@@ -293,180 +294,65 @@ export default function Home() {
               </Text>
             </Checkbox>
             {isPixelCanvasOpen && (
-              <div
-                className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
-                onClick={e => e.stopPropagation()}
-              >
-                <Flex direction="column" gap="size-100">
-                  <Flex gap="size-100" UNSAFE_className="px-2 mt-1">
-                    <ToggleButton
-                      isSelected={
-                        selectedAsssistivImageInputType ===
-                        AssistiveImageInputType.SKETCH
-                      }
-                      UNSAFE_style={{
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Outline Sketch
-                    </ToggleButton>
-                    <ToggleButton
-                      isSelected={
-                        selectedAsssistivImageInputType ===
-                        AssistiveImageInputType.BRUSH
-                      }
-                      UNSAFE_style={{
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Color Brush
-                    </ToggleButton>
-                    <ToggleButton
-                      isSelected={
-                        selectedAsssistivImageInputType ===
-                        AssistiveImageInputType.PIXELS
-                      }
-                      UNSAFE_style={{
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Pixel Squares
-                    </ToggleButton>
-                  </Flex>
-                  <Flex direction="row" gap="size-100">
-                    <div className="bg-white">
-                      <Dotting
-                        ref={dottingRef}
-                        width={350}
-                        height={350}
-                        isGridVisible={isGridVisible}
-                        initData={userDataArray}
-                        style={{
-                          border: "none",
-                        }}
-                      />
-                      {/* <BrushCanvas width={350} height={350} canvasWidth={150} canvasHeight={150} /> */}
-                    </div>
-                    <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
-                      <Flex
-                        justifyContent={"space-between"}
-                        alignItems={"center"}
-                      >
-                        <Flex alignItems={"center"}>
-                          <Switch
-                            isSelected={isGridVisible}
-                            onChange={setIsGridVisible}
-                          />
-                          <Text
-                            UNSAFE_className="text-[12px]"
-                            UNSAFE_style={{
-                              marginLeft: "-5px",
-                            }}
-                          >
-                            Show Grids
-                          </Text>
-                        </Flex>
-                        <ContextualHelp variant="info">
-                          <Heading>How to use?</Heading>
-                          <Content>
-                            <Text>
-                              The pixel canvas is a supplementary tool to help
-                              you give the model a rough image input to refer to
-                              when generating images. You are free to pan and
-                              zoom the canvas
-                            </Text>
-                          </Content>
-                        </ContextualHelp>
-                      </Flex>
-                      <Flex
-                        justifyContent={"space-between"}
-                        UNSAFE_className="mt-1"
-                      >
-                        <ToggleButton
-                          width={"size-600"}
-                          isSelected={brushTool === BrushTool.DOT}
-                          onPress={() => {
-                            changeBrushTool(BrushTool.DOT);
-                          }}
-                        >
-                          <BrushIcon />
-                        </ToggleButton>
-                        <ToggleButton
-                          isSelected={brushTool === BrushTool.ERASER}
-                          width={"size-600"}
-                          onPress={() => {
-                            changeBrushTool(BrushTool.ERASER);
-                          }}
-                        >
-                          <EraserIcon />
-                        </ToggleButton>
-                        <Button
-                          variant="secondary"
-                          onPress={() => {
-                            undo();
-                          }}
-                        >
-                          <UndoIcon />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          onPress={() => {
-                            redo();
-                          }}
-                        >
-                          <RedoIcon />
-                        </Button>
-                      </Flex>
-                      <Slider
-                        labelPosition="side"
-                        label="brush size"
-                        showValueLabel={false}
-                        UNSAFE_className="mt-1"
-                        defaultValue={1}
-                        value={brushSize}
-                        onChange={value => {
-                          setBrushSize(value);
-                        }}
-                        minValue={1}
-                        maxValue={5}
-                      />
-                      <ColorWheel
-                        size={130}
-                        UNSAFE_className="my-5 mx-auto"
-                        defaultValue="hsl(30, 100%, 50%)"
-                        value={changingColor}
-                        onChange={color => {
-                          setChangingColor(color);
-                          changeBrushTool(BrushTool.DOT);
-                        }}
-                        onChangeEnd={setFinalValue}
-                      />
-
-                      <Flex direction="column">
-                        <Text UNSAFE_className="text-xs mb-1">
-                          Recently Used Colors
-                        </Text>
-                        <Flex gap="size-100" wrap>
-                          {Array.from(recentlyUsedColors).map(color => (
-                            <div
-                              key={color}
-                              className={`w-6 h-6 rounded-full`}
-                              style={{
-                                backgroundColor: color,
-                              }}
-                              onClick={() => {
-                                const newColor = parseColor(color);
-                                changeBrushTool(BrushTool.DOT);
-                                setFinalValue(newColor);
-                              }}
-                            />
-                          ))}
-                        </Flex>
-                      </Flex>
-                    </div>
-                  </Flex>
+              <>
+                <Flex gap="size-100" UNSAFE_className="mb-1">
+                  <ToggleButton
+                    isSelected={
+                      selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.SKETCH
+                    }
+                    UNSAFE_style={{
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Outline Sketch
+                  </ToggleButton>
+                  <ToggleButton
+                    isSelected={
+                      selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.BRUSH
+                    }
+                    UNSAFE_style={{
+                      fontWeight: "bold",
+                    }}
+                    onPressChange={() => {
+                      setSelectedAssistiveImageInputType(
+                        AssistiveImageInputType.BRUSH,
+                      );
+                    }}
+                  >
+                    Color Brush
+                  </ToggleButton>
+                  <ToggleButton
+                    isSelected={
+                      selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.PIXELS
+                    }
+                    UNSAFE_style={{
+                      fontWeight: "bold",
+                    }}
+                    onPressChange={() => {
+                      setSelectedAssistiveImageInputType(
+                        AssistiveImageInputType.PIXELS,
+                      );
+                    }}
+                  >
+                    Pixel Squares
+                  </ToggleButton>
                 </Flex>
-              </div>
+                <div
+                  className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PIXELS && (
+                    <PixelCanvas
+                      initialData={initialPixelDataArray}
+                      setInitialData={setInitialPixelDataArray}
+                    />
+                  )}
+                </div>
+              </>
             )}
           </div>
         </Flex>
