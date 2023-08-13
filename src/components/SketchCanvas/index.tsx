@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Editor, { BrushData } from "./Editor";
+import Editor, { SketchData } from "./Editor";
 import {
   Button,
   Content,
@@ -33,20 +33,20 @@ export interface SketchCanvasProps {
   canvasHeight?: number;
   canvasLeftTopX?: number;
   canvasLeftTopY?: number;
-  initData?: BrushData;
-  setInitialBrushData: React.Dispatch<
+  initData?: SketchData;
+  setInitialSketchData: React.Dispatch<
     React.SetStateAction<
       | {
           canvasHeight: number;
           canvasWidth: number;
           canvasLeftTopX: number;
           canvasLeftTopY: number;
-          data: BrushData;
+          data: SketchData;
         }
       | undefined
     >
   >;
-  setBrushCanvasImageBlob: React.Dispatch<
+  setSketchCanvasImageBlob: React.Dispatch<
     React.SetStateAction<Blob | undefined>
   >;
   style?: React.CSSProperties;
@@ -72,10 +72,10 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
     setDataCanvas(element);
   }, []);
   const [changingColor, setChangingColor] = useState(
-    parseColor("hsl(50, 100%, 50%)"),
+    parseColor("hsl(0, 0%, 0%)"),
   );
   const [finalSelectedColor, setFinalSelectedColor] = useState(
-    parseColor("hsl(50, 100%, 50%)"),
+    parseColor("hsl(0, 0%, 0%)"),
   );
   const [canvasDataChangeListeners, setCanvasDataChangeListeners] = useState<
     CanvasDataChangeHandler[]
@@ -131,7 +131,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
       canvasInfo.width * panZoom.scale * widthExtensionRatio,
       canvasInfo.height * panZoom.scale * heightExtensionRatio,
     );
-    props.setBrushCanvasImageBlob(blob);
+    props.setSketchCanvasImageBlob(blob);
     // tempCanvas.width = canvasInfo.width;
     // tempCanvas.height = canvasInfo.height;
     // const ctx = tempCanvas.getContext("2d");
@@ -153,7 +153,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
 
     // img.src = URL.createObjectURL(blob);
     // document.body.appendChild(tempCanvas);
-  }, [editor, props.setBrushCanvasImageBlob]);
+  }, [editor, props.setSketchCanvasImageBlob]);
 
   const addCanvasDataChangeListener = useCallback(
     (listener: CanvasDataChangeHandler) => {
@@ -172,7 +172,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
   const canvasDataChangeSetInitialDataListener = useCallback(
     (params: CanvasDataChangeParams) => {
       getImageBlob();
-      props.setInitialBrushData({
+      props.setInitialSketchData({
         canvasHeight: params.canvasHeight,
         canvasWidth: params.canvasWidth,
         canvasLeftTopX: params.canvasLeftTopX,
@@ -180,7 +180,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
         data: params.data,
       });
     },
-    [props.setInitialBrushData, getImageBlob],
+    [props.setInitialSketchData, getImageBlob],
   );
 
   useEffect(() => {
@@ -463,7 +463,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
           minValue={brushTool === SketchTool.PEN ? 3 : 6}
           maxValue={brushTool === SketchTool.PEN ? 23 : 46}
         />
-        <ColorWheel
+        {/* <ColorWheel
           size={130}
           UNSAFE_className="my-5 mx-auto"
           defaultValue="hsl(30, 100%, 50%)"
@@ -475,8 +475,8 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
             }
           }}
           onChangeEnd={setFinalSelectedColor}
-        />
-        <Flex direction="column">
+        /> */}
+        {/* <Flex direction="column">
           <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
           <Flex gap="size-100" wrap>
             {Array.from(recentlyUsedColors).map(color => (
@@ -494,7 +494,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
               />
             ))}
           </Flex>
-        </Flex>
+        </Flex> */}
       </div>
     </Flex>
   );

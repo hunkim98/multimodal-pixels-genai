@@ -26,10 +26,11 @@ import axios from "axios";
 import { imageFileUpload } from "@/utils/upload";
 import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
 
-import OutlineCanvas from "@/components/OutlineCanvas";
+import OutlineCanvas from "@/components/SketchCanvas";
 import BrushCanvas from "@/components/BrushCanvas";
 import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
 import { BrushData } from "@/components/BrushCanvas/Editor";
+import SketchCanvas from "@/components/SketchCanvas";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,7 +51,15 @@ export default function Home() {
     canvasLeftTopY: number;
     data: BrushData;
   }>();
+  const [initialSketchData, setInitialSketchData] = useState<{
+    canvasHeight: number;
+    canvasWidth: number;
+    canvasLeftTopX: number;
+    canvasLeftTopY: number;
+    data: BrushData;
+  }>();
   const [brushCanvasImageBlob, setBrushCanvasImageBlob] = useState<Blob>();
+  const [sketchCanvasImageBlob, setSketchCanvasImageBlob] = useState<Blob>();
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
@@ -204,6 +213,11 @@ export default function Home() {
                     UNSAFE_style={{
                       fontWeight: "bold",
                     }}
+                    onPressChange={() => {
+                      setSelectedAssistiveImageInputType(
+                        AssistiveImageInputType.SKETCH,
+                      );
+                    }}
                   >
                     Outline Sketch
                   </ToggleButton>
@@ -261,6 +275,18 @@ export default function Home() {
                       initData={initialBrushData?.data}
                       setInitialBrushData={setInitialBrushData}
                       setBrushCanvasImageBlob={setBrushCanvasImageBlob}
+                    />
+                  )}
+                  {selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.SKETCH && (
+                    <SketchCanvas
+                      canvasWidth={initialSketchData?.canvasWidth}
+                      canvasHeight={initialSketchData?.canvasHeight}
+                      canvasLeftTopX={initialSketchData?.canvasLeftTopX}
+                      canvasLeftTopY={initialSketchData?.canvasLeftTopY}
+                      initData={initialSketchData?.data}
+                      setInitialSketchData={setInitialSketchData}
+                      setSketchCanvasImageBlob={setSketchCanvasImageBlob}
                     />
                   )}
                 </div>

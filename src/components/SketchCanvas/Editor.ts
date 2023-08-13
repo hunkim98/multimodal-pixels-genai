@@ -31,9 +31,9 @@ import {
   InteractionExtensionAllowanceRatio,
 } from "@/utils/config";
 import { Action, ActionType } from "./Action";
-import { BrushColorAction } from "./BrushColorAction";
+import { SketchAction } from "./SketchAction";
 import { getNewGUIDString } from "@/utils/guid";
-import { BrushEraseAction } from "./BrushEraseAction";
+import { SketchEraseAction } from "./SketchEraseAction";
 import { CanvasSizeChangeAction } from "./CanvasSizeChangeAction";
 import { BrushTool } from "dotting";
 import { createImageFromPartOfCanvas } from "@/utils/image";
@@ -42,15 +42,17 @@ import {
   CanvasEvents,
   CanvasStrokeEndParams,
 } from "./event";
+import { checkLineIntersection } from "@/utils/line";
 
-export type BrushDataElement = {
+export type SketchDataElement = {
   id: string;
   color: string;
   points: Array<Coord>;
   strokeWidth: number;
+  isVisible?: boolean;
 };
 
-export type BrushData = Array<BrushDataElement>;
+export type SketchData = Array<SketchDataElement>;
 
 export class Editor extends EventDispatcher {
   private width: number = 0;
@@ -76,6 +78,7 @@ export class Editor extends EventDispatcher {
   private mouseMoveWorldPos: Coord = { x: 0, y: 0 };
   private previousMouseMoveWorldPos: Coord | null = null;
   private directionToExtendSelectedArea: ButtonDirection | null = null;
+  private erasedDataIndicesWhileInteraction = new Set<number>();
   private undoHistory: Array<Action> = [];
   private redoHistory: Array<Action> = [];
   private canvasInfo: CanvasDataInfo = {
@@ -91,7 +94,8 @@ export class Editor extends EventDispatcher {
     height: 0,
   };
   private currentBrushPoints: Array<Coord> | null = null;
-  private data: BrushData = [];
+  private eraserPoints: Array<Coord> | null = null;
+  private data: SketchData = [];
   private extensionPoint: {
     direction: ButtonDirection | null;
     offsetYAmount: number;
@@ -116,7 +120,7 @@ export class Editor extends EventDispatcher {
     canvasHeight?: number,
     canvasLeftTopX?: number,
     canvasLeftTopY?: number,
-    initData?: BrushData,
+    initData?: SketchData,
   ) {
     super();
     this.dataCanvasElement = dataCanvasElement;
@@ -459,13 +463,17 @@ export class Editor extends EventDispatcher {
   commitAction(action: Action) {
     const type = action.getType();
     switch (type) {
-      case ActionType.BrushColor:
-        const brushColorAction = action as BrushColorAction;
-        this.data.push(brushColorAction.getData());
+      case ActionType.Sketch:
+        const brushColorAction = action as SketchAction;
+        for (let i = 0; i < brushColorAction.getData().length; i++) {
+          this.data.push(brushColorAction.getData()[i]);
+        }
         break;
-      case ActionType.BrushErase:
-        const brushEraseAction = action as BrushEraseAction;
-        this.data.splice(brushEraseAction.getHistoryIndex(), 1);
+      case ActionType.Erase:
+        const brushEraseAction = action as SketchEraseAction;
+        // this.data.splice(brushEraseAction.getHistoryIndex(), 1);
+        const brushEraseIds = brushEraseAction.getData().map(d => d.id);
+        this.data = this.data.filter(d => !brushEraseIds.includes(d.id));
         break;
       case ActionType.CanvasSizeChange:
         const canvasSizeChangeAction = action as CanvasSizeChangeAction;
@@ -696,7 +704,8 @@ export class Editor extends EventDispatcher {
           y: mouseCartCoord.y,
         });
       } else if (this.brushTool === SketchTool.ERASER) {
-        this.currentBrushPoints.push({
+        this.eraserPoints = [];
+        this.eraserPoints.push({
           x: mouseCartCoord.x,
           y: mouseCartCoord.y,
         });
@@ -740,10 +749,40 @@ export class Editor extends EventDispatcher {
         y: mouseCartCoord.y,
       });
     } else if (this.brushTool === SketchTool.ERASER) {
-      this.currentBrushPoints.push({
+      if (!this.eraserPoints) {
+        return;
+      }
+      this.eraserPoints.push({
         x: mouseCartCoord.x,
         y: mouseCartCoord.y,
       });
+      if (this.eraserPoints.length > 2) {
+        this.eraserPoints.shift();
+      }
+      const point1 = this.eraserPoints[0];
+      const point2 = this.eraserPoints[1];
+      this.eraseSketch(point1, point2);
+    }
+    this.render();
+  }
+
+  eraseSketch(eraserPoint1: Coord, eraserPoint2: Coord) {
+    for (let i = 0; i < this.data.length; i++) {
+      const line = this.data[i];
+      for (let j = 0; j < line.points.length - 1; j++) {
+        const linePoint1 = line.points[j];
+        const linePoint2 = line.points[j + 1];
+        const isIntersect = checkLineIntersection(
+          eraserPoint1,
+          eraserPoint2,
+          linePoint1,
+          linePoint2,
+        );
+        if (isIntersect.onLine1 && isIntersect.onLine2) {
+          this.data[i].isVisible = false;
+          this.erasedDataIndicesWhileInteraction.add(i);
+        }
+      }
     }
     this.render();
   }
@@ -758,7 +797,6 @@ export class Editor extends EventDispatcher {
 
   changeStrokeWidth(width: number) {
     this.strokeWidth = width;
-    console.log("stroke width", this.strokeWidth);
   }
 
   recordAction(action: Action) {
@@ -776,26 +814,38 @@ export class Editor extends EventDispatcher {
   onMouseUp(evt: TouchyEvent) {
     evt.preventDefault();
     if (this.mouseMode === MouseMode.DRAWING) {
-      if (!this.currentBrushPoints) {
-        return;
-      }
-      if (this.currentBrushPoints.length === 0) {
-        return;
-      }
-      const recentDrawnStroke = this.data[this.data.length - 1];
       if (this.brushTool === SketchTool.PEN) {
+        if (!this.currentBrushPoints) {
+          return;
+        }
+        if (this.currentBrushPoints.length === 0) {
+          return;
+        }
+        const recentDrawnStroke = this.data[this.data.length - 1];
         this.recordAction(
-          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+          new SketchAction([recentDrawnStroke], [this.data.length - 1]),
         );
-      } else {
+        this.emitStrokeEndEvent({
+          data: recentDrawnStroke,
+          brushColor: recentDrawnStroke.color,
+        });
+      } else if (this.brushTool === SketchTool.ERASER) {
+        if (this.erasedDataIndicesWhileInteraction.size === 0) {
+          return;
+        }
+        const sketchIndicesToErase = Array.from(
+          this.erasedDataIndicesWhileInteraction,
+        );
+
+        const sketchesToErase = sketchIndicesToErase.map(
+          index => this.data[index],
+        );
+
         this.recordAction(
-          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+          new SketchEraseAction(sketchesToErase, sketchIndicesToErase),
         );
+        this.erasedDataIndicesWhileInteraction.clear();
       }
-      this.emitStrokeEndEvent({
-        data: recentDrawnStroke,
-        brushColor: recentDrawnStroke.color,
-      });
     } else if (this.mouseMode === MouseMode.EXTENDING) {
       this.recordAction(
         new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
@@ -833,31 +883,44 @@ export class Editor extends EventDispatcher {
   onMouseOut(evt: TouchyEvent) {
     evt.preventDefault();
     if (this.mouseMode === MouseMode.DRAWING) {
-      if (!this.currentBrushPoints) {
-        return;
-      }
-      if (this.currentBrushPoints.length === 0) {
-        return;
-      }
-      const recentDrawnStroke = this.data[this.data.length - 1];
       if (this.brushTool === SketchTool.PEN) {
+        if (!this.currentBrushPoints) {
+          return;
+        }
+        if (this.currentBrushPoints.length === 0) {
+          return;
+        }
+        const recentDrawnStroke = this.data[this.data.length - 1];
         this.recordAction(
-          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+          new SketchAction([recentDrawnStroke], [this.data.length - 1]),
         );
-      } else {
+        this.emitStrokeEndEvent({
+          data: recentDrawnStroke,
+          brushColor: recentDrawnStroke.color,
+        });
+      } else if (this.brushTool === SketchTool.ERASER) {
+        if (this.erasedDataIndicesWhileInteraction.size === 0) {
+          return;
+        }
+        const sketchIndicesToErase = Array.from(
+          this.erasedDataIndicesWhileInteraction,
+        );
+
+        const sketchesToErase = sketchIndicesToErase.map(
+          index => this.data[index],
+        );
+
         this.recordAction(
-          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+          new SketchEraseAction(sketchesToErase, sketchIndicesToErase),
         );
+        this.erasedDataIndicesWhileInteraction.clear();
       }
-      this.emitStrokeEndEvent({
-        data: recentDrawnStroke,
-        brushColor: recentDrawnStroke.color,
-      });
     } else if (this.mouseMode === MouseMode.EXTENDING) {
       this.recordAction(
         new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
       );
     }
+    this.mouseMode === MouseMode.PANNING;
     touchy(
       this.interactionCanvasElement,
       removeEvent,
@@ -877,6 +940,13 @@ export class Editor extends EventDispatcher {
       this.handleExtension,
     );
     this.currentBrushPoints = null;
+    this.pinchZoomDiff = null;
+    this.mouseDownWorldPos = null;
+    this.mouseDownPanZoom = null;
+    this.extensionPoint.offsetXAmount = 0;
+    this.extensionPoint.offsetYAmount = 0;
+    this.previousMouseMoveWorldPos = null;
+    return;
   }
 
   setPanZoom({ offset, scale }: Partial<PanZoom>) {
@@ -1078,6 +1148,10 @@ export class Editor extends EventDispatcher {
     this.ctx.save();
     for (let i = 0; i < this.data.length; i++) {
       const brushStroke = this.data[i];
+      const isVisible = brushStroke.isVisible;
+      if (isVisible !== undefined && !isVisible) {
+        continue;
+      }
       this.ctx.beginPath();
       this.ctx.strokeStyle = brushStroke.color;
       this.ctx.lineWidth = brushStroke.strokeWidth * this.panZoom.scale;

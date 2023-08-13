@@ -1,6 +1,6 @@
 export enum ActionType {
-  BrushColor = "BrushColor",
-  BrushErase = "BrushErase",
+  Sketch = "Sketch",
+  Erase = "BrushErase",
   CanvasSizeChange = "CanvasSizeChange",
 }
 

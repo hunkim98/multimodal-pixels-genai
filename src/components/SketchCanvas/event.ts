@@ -1,4 +1,4 @@
-import { BrushData, BrushDataElement } from "./Editor";
+import { SketchData, SketchDataElement } from "./Editor";
 
 export enum CanvasEvents {
   DATA_CHANGE = "dataChange",
@@ -7,7 +7,7 @@ export enum CanvasEvents {
 export type CanvasDataChangeHandler = (params: CanvasDataChangeParams) => void;
 
 export type CanvasDataChangeParams = {
-  data: BrushData;
+  data: SketchData;
   canvasWidth: number;
   canvasHeight: number;
   canvasLeftTopX: number;
@@ -17,6 +17,6 @@ export type CanvasDataChangeParams = {
 export type CanvasStrokeEndHandler = (params: CanvasStrokeEndParams) => void;
 
 export type CanvasStrokeEndParams = {
-  data: BrushDataElement;
+  data: SketchDataElement;
   brushColor: string;
 };
