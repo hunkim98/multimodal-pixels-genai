@@ -387,7 +387,6 @@ export class Canvas extends EventDispatcher {
     if (this.undoHistory.length === 0) return;
     const action = this.undoHistory.pop();
     const inverseAction = action?.createInverseAction();
-    console.log(inverseAction, "inverse action");
     this.commitAction(inverseAction!);
     this.redoHistory.push(action!);
   }
@@ -401,7 +400,6 @@ export class Canvas extends EventDispatcher {
 
   commitAction(action: Action) {
     const type = action.getType();
-    console.log("committing action", type);
     switch (type) {
       case ActionType.BrushColor:
         const brushColorAction = action as BrushColorAction;
@@ -410,7 +408,6 @@ export class Canvas extends EventDispatcher {
       case ActionType.BrushErase:
         const brushEraseAction = action as BrushEraseAction;
         this.data.splice(brushEraseAction.getHistoryIndex(), 1);
-        console.log("erasing", brushEraseAction.getHistoryIndex());
         break;
       case ActionType.CanvasSizeChange:
         const canvasSizeChangeAction = action as CanvasSizeChangeAction;
@@ -673,6 +670,7 @@ export class Canvas extends EventDispatcher {
 
   changeStrokeWidth(width: number) {
     this.strokeWidth = width;
+    console.log("stroke width", this.strokeWidth);
   }
 
   recordAction(action: Action) {
@@ -721,7 +719,6 @@ export class Canvas extends EventDispatcher {
   onMouseOut(evt: TouchyEvent) {
     evt.preventDefault();
     if (this.mouseMode === MouseMode.DRAWING) {
-      console.log("mosue mode was drawing");
       if (!this.currentBrushPoints) {
         return;
       }
@@ -826,6 +823,10 @@ export class Canvas extends EventDispatcher {
     touchy(this.element, removeEvent, "mousemove", this.handlePanning);
     touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
     this.element.removeEventListener("wheel", this.handleWheel);
+  }
+
+  getData() {
+    return this.data;
   }
 
   render() {

@@ -15,27 +15,8 @@ import {
   Checkbox,
   ButtonGroup,
 } from "@adobe/react-spectrum";
-import ChveronRightMedium from "@spectrum-icons/ui/ChevronRightMedium";
-import BrushIcon from "@spectrum-icons/workflow/Brush";
-import EraserIcon from "@spectrum-icons/workflow/Erase";
-import DeleteIcon from "@spectrum-icons/workflow/Delete";
-import UndoIcon from "@spectrum-icons/workflow/Undo";
-import RedoIcon from "@spectrum-icons/workflow/Redo";
-import {
-  BrushTool,
-  CanvasBrushChangeHandler,
-  CanvasDataChangeHandler,
-  CanvasDataChangeParams,
-  CanvasStrokeEndHandler,
-  Dotting,
-  DottingData,
-  DottingRef,
-  PixelModifyItem,
-  useBrush,
-  useData,
-  useDotting,
-  useHandlers,
-} from "dotting";
+
+import { PixelModifyItem } from "dotting";
 import { parseColor } from "@react-stately/color";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -44,14 +25,7 @@ import { ModelInputs } from "@/types/replicate";
 import axios from "axios";
 import { imageFileUpload } from "@/utils/upload";
 import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
-import {
-  brushSizeFive,
-  brushSizeFour,
-  brushSizeOne,
-  brushSizeThree,
-  brushSizeTwo,
-} from "@/utils/brush";
-import { blob } from "stream/consumers";
+
 import OutlineCanvas from "@/components/OutlineCanvas";
 import BrushCanvas from "@/components/BrushCanvas";
 import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
@@ -249,6 +223,7 @@ export default function Home() {
                       canvasLeftTopX={initialBrushData?.canvasLeftTopX}
                       canvasLeftTopY={initialBrushData?.canvasLeftTopY}
                       initData={initialBrushData?.data}
+                      setInitialBrushData={setInitialBrushData}
                     />
                   )}
                 </div>

@@ -6,15 +6,18 @@ import {
   ContextualHelp,
   Flex,
   Heading,
+  Slider,
   Text,
   ToggleButton,
 } from "@adobe/react-spectrum";
+import { parseColor } from "@react-stately/color";
 import { PenTool } from "@/utils/types";
 import BrushIcon from "@spectrum-icons/workflow/Brush";
 import EraserIcon from "@spectrum-icons/workflow/Erase";
 import DeleteIcon from "@spectrum-icons/workflow/Delete";
 import UndoIcon from "@spectrum-icons/workflow/Undo";
 import RedoIcon from "@spectrum-icons/workflow/Redo";
+import { ColorWheel } from "@react-spectrum/color";
 
 export interface BrushCanvasProps {
   canvasWidth?: number;
@@ -22,6 +25,18 @@ export interface BrushCanvasProps {
   canvasLeftTopX?: number;
   canvasLeftTopY?: number;
   initData?: BrushData;
+  setInitialBrushData: React.Dispatch<
+    React.SetStateAction<
+      | {
+          canvasHeight: number;
+          canvasWidth: number;
+          canvasLeftTopX: number;
+          canvasLeftTopY: number;
+          data: BrushData;
+        }
+      | undefined
+    >
+  >;
   style?: React.CSSProperties;
 }
 
@@ -43,6 +58,15 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     element.style["touchAction"] = "none";
     setInteractionCanvas(element);
   }, []);
+  const [changingColor, setChangingColor] = useState(
+    parseColor("hsl(50, 100%, 50%)"),
+  );
+  const [finalSelectedColor, setFinalSelectedColor] = useState(
+    parseColor("hsl(50, 100%, 50%)"),
+  );
+  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
+    new Set(),
+  );
 
   const gotBackgroundCanvasRef = useCallback((element: HTMLCanvasElement) => {
     if (!element) {
@@ -119,9 +143,14 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
         return;
       }
       editor?.changeBrushTool(tool);
+      if (tool === PenTool.ERASER) {
+        changeStrokeWidth(strokeWidth * 2);
+      } else {
+        changeStrokeWidth(strokeWidth / 2);
+      }
       setBrushTool(tool);
     },
-    [editor, setBrushTool],
+    [editor, setBrushTool, changeStrokeWidth, strokeWidth],
   );
 
   const undo = useCallback(() => {
@@ -131,6 +160,10 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   const redo = useCallback(() => {
     editor?.redo();
   }, [editor]);
+
+  useEffect(() => {
+    changeBrushColor(finalSelectedColor.toString("hex"));
+  }, [finalSelectedColor, changeBrushColor]);
 
   return (
     <Flex direction="row" gap="size-100">
@@ -171,7 +204,11 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
         </div>
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
-        <Flex justifyContent={"space-between"} alignItems={"center"}>
+        <Flex
+          justifyContent={"space-between"}
+          alignItems={"center"}
+          height={32}
+        >
           <ContextualHelp variant="info">
             <Heading>How to use?</Heading>
             <Content>
@@ -219,6 +256,33 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
             <RedoIcon />
           </Button>
         </Flex>
+        <Slider
+          labelPosition="side"
+          label="brush size"
+          showValueLabel={false}
+          UNSAFE_className="mt-1"
+          defaultValue={1}
+          step={5}
+          value={strokeWidth}
+          onChange={value => {
+            changeStrokeWidth(value);
+          }}
+          minValue={brushTool === PenTool.PEN ? 3 : 6}
+          maxValue={brushTool === PenTool.PEN ? 23 : 46}
+        />
+        <ColorWheel
+          size={130}
+          UNSAFE_className="my-5 mx-auto"
+          defaultValue="hsl(30, 100%, 50%)"
+          value={changingColor}
+          onChange={color => {
+            setChangingColor(color);
+            if (brushTool === PenTool.ERASER) {
+              changeBrushTool(PenTool.PEN);
+            }
+          }}
+          onChangeEnd={setFinalSelectedColor}
+        />
       </div>
     </Flex>
   );
