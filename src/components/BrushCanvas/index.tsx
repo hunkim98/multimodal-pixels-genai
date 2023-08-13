@@ -77,6 +77,8 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     const canvas = new Canvas(
       interactionCanvas,
       backgroundCanvas,
+      350,
+      350,
       props.canvasWidth,
       props.canvasHeight,
       props.canvasLeftTopX,

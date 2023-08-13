@@ -23,6 +23,8 @@ import {
   lerpRanges,
 } from "@/utils/math";
 import {
+  DefaultCanvasHeight,
+  DefaultCanvasWidth,
   DefaultMaxScale,
   DefaultMinScale,
   InteractionEdgeTouchingRange,
@@ -100,6 +102,8 @@ export class Canvas extends EventDispatcher {
   constructor(
     element: HTMLCanvasElement,
     backgroundElement: HTMLCanvasElement,
+    width: number,
+    height: number,
     canvasWidth?: number,
     canvasHeight?: number,
     canvasLeftTopX?: number,
@@ -109,14 +113,15 @@ export class Canvas extends EventDispatcher {
     super();
     this.element = element;
     this.backgroundElement = backgroundElement;
-
+    this.width = width;
+    this.height = height;
     this.ctx = this.element.getContext("2d") as CanvasRenderingContext2D;
     this.data = initData || [];
     this.canvasInfo = {
       lefTopX: canvasLeftTopX || 0,
       lefTopY: canvasLeftTopY || 0,
-      width: canvasWidth || 150,
-      height: canvasHeight || 150,
+      width: canvasWidth || DefaultCanvasWidth,
+      height: canvasHeight || DefaultCanvasHeight,
     };
     this.setPanZoom({
       offset: {
@@ -471,6 +476,8 @@ export class Canvas extends EventDispatcher {
     return;
   };
 
+  drawButtons() {}
+
   handlePinchZoom(evt: TouchyEvent) {
     const newPanZoom = calculateNewPanZoomFromPinchZoom(
       evt,
@@ -670,14 +677,12 @@ export class Canvas extends EventDispatcher {
 
   recordAction(action: Action) {
     this.undoHistory.push(action);
-    console.log("undoHistory", action);
     this.redoHistory = [];
   }
 
   onMouseUp(evt: TouchyEvent) {
     evt.preventDefault();
     if (this.mouseMode === MouseMode.DRAWING) {
-      console.log("mosue mode was drawing");
       if (!this.currentBrushPoints) {
         return;
       }
@@ -744,41 +749,50 @@ export class Canvas extends EventDispatcher {
     this.currentBrushPoints = null;
   }
 
-  setPanZoom({
-    offset,
-    scale,
-  }: Partial<PanZoom> & { baseColumnCount?: number; baseRowCount?: number }) {
+  setPanZoom({ offset, scale }: Partial<PanZoom>) {
     if (scale) {
       this.panZoom.scale = scale;
     }
     if (offset) {
       const correctedOffset = { ...offset };
-
+      const excessHeight = this.canvasInfo.height - DefaultCanvasHeight;
+      const excessWidth = this.canvasInfo.width - DefaultCanvasWidth;
       // rowCount * this.gridSquareLength * this.panZoom.scale < this.height
       // Offset changes when grid is bigger than canvas
-      const isCanvasWidthBiggerThanElement =
-        this.canvasInfo.width * this.panZoom.scale > this.height;
       const isCanvasHeightBiggerThanElement =
-        this.canvasInfo.height * this.panZoom.scale > this.width;
+        this.canvasInfo.height * this.panZoom.scale > this.height;
+      const isCanvasWidthBiggerThanElement =
+        this.canvasInfo.width * this.panZoom.scale > this.width;
 
-      const minXPosition = isCanvasHeightBiggerThanElement
-        ? -(this.canvasInfo.width * this.panZoom.scale) -
-          (this.width / 2) * this.panZoom.scale
-        : (-this.width / 2) * this.panZoom.scale;
+      const minXPosition = isCanvasWidthBiggerThanElement
+        ? -this.canvasInfo.width * this.panZoom.scale -
+          (this.width / 2) * this.panZoom.scale +
+          -this.canvasInfo.lefTopX * this.panZoom.scale
+        : -this.canvasInfo.lefTopX * this.panZoom.scale +
+          (-this.width / 2) * this.panZoom.scale;
 
-      const minYPosition = isCanvasWidthBiggerThanElement
+      const minYPosition = isCanvasHeightBiggerThanElement
         ? -this.canvasInfo.height * this.panZoom.scale -
-          (this.height / 2) * this.panZoom.scale
-        : (-this.height / 2) * this.panZoom.scale;
+          (this.height / 2) * this.panZoom.scale +
+          -this.canvasInfo.lefTopY * this.panZoom.scale
+        : -this.canvasInfo.lefTopY * this.panZoom.scale +
+          (-this.height / 2) * this.panZoom.scale;
 
-      const maxXPosition = isCanvasHeightBiggerThanElement
-        ? this.width - (this.width / 2) * this.panZoom.scale
-        : this.width -
+      const maxXPosition = isCanvasWidthBiggerThanElement
+        ? this.width -
+          (this.width / 2) * this.panZoom.scale +
+          -this.canvasInfo.lefTopX * this.panZoom.scale
+        : -this.canvasInfo.lefTopX * this.panZoom.scale +
+          this.width -
           this.canvasInfo.width * this.panZoom.scale -
           (this.width / 2) * this.panZoom.scale;
-      const maxYPosition = isCanvasWidthBiggerThanElement
-        ? this.height - (this.height / 2) * this.panZoom.scale
-        : this.height -
+
+      const maxYPosition = isCanvasHeightBiggerThanElement
+        ? this.height -
+          (this.height / 2) * this.panZoom.scale +
+          -this.canvasInfo.lefTopY * this.panZoom.scale
+        : -this.canvasInfo.lefTopY * this.panZoom.scale +
+          this.height -
           this.canvasInfo.height * this.panZoom.scale -
           (this.height / 2) * this.panZoom.scale;
       if (correctedOffset.x < minXPosition) {
