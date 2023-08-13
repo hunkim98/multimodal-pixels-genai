@@ -1,11 +1,12 @@
 import EventDispatcher from "@/utils/eventDispatcher";
 import {
-  PenTool,
+  SketchTool,
   Coord,
   PanZoom,
   ButtonDirection,
   MouseMode,
   ButtonDimensions,
+  CanvasDataInfo,
 } from "../../utils/types";
 import { TouchyEvent, addEvent, removeEvent, touchy } from "@/utils/touch";
 import {
@@ -22,13 +23,38 @@ import {
   lerpRanges,
 } from "@/utils/math";
 import {
+  DefaultCanvasHeight,
+  DefaultCanvasWidth,
   DefaultMaxScale,
   DefaultMinScale,
   InteractionEdgeTouchingRange,
   InteractionExtensionAllowanceRatio,
 } from "@/utils/config";
+import { Action, ActionType } from "./Action";
+import { SketchAction } from "./SketchAction";
+import { getNewGUIDString } from "@/utils/guid";
+import { SketchEraseAction } from "./SketchEraseAction";
+import { CanvasSizeChangeAction } from "./CanvasSizeChangeAction";
+import { BrushTool } from "dotting";
+import { createImageFromPartOfCanvas } from "@/utils/image";
+import {
+  CanvasDataChangeParams,
+  CanvasEvents,
+  CanvasStrokeEndParams,
+} from "./event";
+import { checkLineIntersection } from "@/utils/line";
 
-export class Canvas extends EventDispatcher {
+export type SketchDataElement = {
+  id: string;
+  color: string;
+  points: Array<Coord>;
+  strokeWidth: number;
+  isVisible?: boolean;
+};
+
+export type SketchData = Array<SketchDataElement>;
+
+export class Editor extends EventDispatcher {
   private width: number = 0;
   private height: number = 0;
   private panZoom: PanZoom = {
@@ -41,7 +67,7 @@ export class Canvas extends EventDispatcher {
     lastMousePos: { x: 0, y: 0 },
   };
   private pinchZoomDiff: number | null = null;
-  private brushTool: PenTool = PenTool.PEN;
+  private brushTool: SketchTool = SketchTool.PEN;
   private mouseMode: MouseMode = MouseMode.DRAWING;
   private dpr = 1;
   private strokeWidth = 3;
@@ -52,24 +78,24 @@ export class Canvas extends EventDispatcher {
   private mouseMoveWorldPos: Coord = { x: 0, y: 0 };
   private previousMouseMoveWorldPos: Coord | null = null;
   private directionToExtendSelectedArea: ButtonDirection | null = null;
-  private canvasInfo = {
-    lefTopX: 0,
-    lefTopY: 0,
+  private erasedDataIndicesWhileInteraction = new Set<number>();
+  private undoHistory: Array<Action> = [];
+  private redoHistory: Array<Action> = [];
+  private canvasInfo: CanvasDataInfo = {
+    leftTopX: 0,
+    leftTopY: 0,
     width: 0,
     height: 0,
   };
-  private capturedCanvasInfo = {
-    lefTopX: 0,
-    lefTopY: 0,
+  private capturedCanvasInfo: CanvasDataInfo = {
+    leftTopX: 0,
+    leftTopY: 0,
     width: 0,
     height: 0,
   };
   private currentBrushPoints: Array<Coord> | null = null;
-  private brushPoints: Array<{
-    color: string;
-    points: Array<Coord>;
-    strokeWidth: number;
-  }> = [];
+  private eraserPoints: Array<Coord> | null = null;
+  private data: SketchData = [];
   private extensionPoint: {
     direction: ButtonDirection | null;
     offsetYAmount: number;
@@ -80,41 +106,49 @@ export class Canvas extends EventDispatcher {
     offsetXAmount: 0,
   };
   private ctx: CanvasRenderingContext2D;
-  private element: HTMLCanvasElement;
+  private dataCanvasElement: HTMLCanvasElement;
   private backgroundElement: HTMLCanvasElement;
+  private interactionCanvasElement: HTMLCanvasElement;
 
   constructor(
-    element: HTMLCanvasElement,
+    dataCanvasElement: HTMLCanvasElement,
     backgroundElement: HTMLCanvasElement,
-    canvasWidth: number,
-    canvasHeight: number,
+    interactionCanvasElement: HTMLCanvasElement,
+    width: number,
+    height: number,
+    canvasWidth?: number,
+    canvasHeight?: number,
     canvasLeftTopX?: number,
     canvasLeftTopY?: number,
+    initData?: SketchData,
   ) {
     super();
-    this.element = element;
+    this.dataCanvasElement = dataCanvasElement;
     this.backgroundElement = backgroundElement;
-
-    this.ctx = this.element.getContext("2d") as CanvasRenderingContext2D;
-
+    this.interactionCanvasElement = interactionCanvasElement;
+    this.width = width;
+    this.height = height;
+    this.ctx = this.dataCanvasElement.getContext(
+      "2d",
+    ) as CanvasRenderingContext2D;
+    this.data = initData || [];
     this.canvasInfo = {
-      lefTopX: canvasLeftTopX || 0,
-      lefTopY: canvasLeftTopY || 0,
-      width: canvasWidth,
-      height: canvasHeight,
+      leftTopX: canvasLeftTopX || 0,
+      leftTopY: canvasLeftTopY || 0,
+      width: canvasWidth || DefaultCanvasWidth,
+      height: canvasHeight || DefaultCanvasHeight,
     };
     this.setPanZoom({
       offset: {
         x:
-          (this.panZoom.scale *
-            (-this.canvasInfo.width + this.canvasInfo.lefTopX)) /
-          2,
+          (this.panZoom.scale * -this.canvasInfo.width) / 2 -
+          this.canvasInfo.leftTopX,
         y:
-          (this.panZoom.scale *
-            (-this.canvasInfo.height + this.canvasInfo.lefTopY)) /
-          2,
+          (this.panZoom.scale * -this.canvasInfo.height) / 2 -
+          this.canvasInfo.leftTopY,
       },
     });
+    this.render();
     this.initialize();
   }
 
@@ -126,11 +160,44 @@ export class Canvas extends EventDispatcher {
     this.onMouseMove = this.onMouseMove.bind(this);
 
     // add event listeners
-    touchy(this.element, addEvent, "mousedown", this.onMouseDown);
-    touchy(this.element, addEvent, "mouseup", this.onMouseUp);
-    touchy(this.element, addEvent, "mouseout", this.onMouseOut);
-    touchy(this.element, addEvent, "mousemove", this.onMouseMove);
-    this.element.addEventListener("wheel", this.handleWheel);
+    touchy(
+      this.interactionCanvasElement,
+      addEvent,
+      "mousedown",
+      this.onMouseDown,
+    );
+    touchy(this.interactionCanvasElement, addEvent, "mouseup", this.onMouseUp);
+    touchy(
+      this.interactionCanvasElement,
+      addEvent,
+      "mouseout",
+      this.onMouseOut,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      addEvent,
+      "mousemove",
+      this.onMouseMove,
+    );
+    this.interactionCanvasElement.addEventListener("wheel", this.handleWheel);
+  }
+
+  emitDataChangeEvent(params: CanvasDataChangeParams) {
+    this.emit(CanvasEvents.DATA_CHANGE, params);
+  }
+
+  emitStrokeEndEvent(params: CanvasStrokeEndParams) {
+    this.emit(CanvasEvents.STROKE_END, params);
+  }
+
+  emitCurrentDataChangeEvent() {
+    this.emitDataChangeEvent({
+      data: this.data,
+      canvasWidth: this.canvasInfo.width,
+      canvasHeight: this.canvasInfo.height,
+      canvasLeftTopX: this.canvasInfo.leftTopX,
+      canvasLeftTopY: this.canvasInfo.leftTopY,
+    });
   }
 
   scale(x: number, y: number) {
@@ -145,22 +212,34 @@ export class Canvas extends EventDispatcher {
 
   setWidth(width: number, devicePixelRatio?: number) {
     this.width = width;
-    this.element.width = devicePixelRatio ? width * devicePixelRatio : width;
-    this.element.style.width = `${width}px`;
+    this.dataCanvasElement.width = devicePixelRatio
+      ? width * devicePixelRatio
+      : width;
+    this.dataCanvasElement.style.width = `${width}px`;
     this.backgroundElement.width = devicePixelRatio
       ? width * devicePixelRatio
       : width;
     this.backgroundElement.style.width = `${width}px`;
+    this.interactionCanvasElement.width = devicePixelRatio
+      ? width * devicePixelRatio
+      : width;
+    this.interactionCanvasElement.style.width = `${width}px`;
   }
 
   setHeight(height: number, devicePixelRatio?: number) {
     this.height = height;
-    this.element.height = devicePixelRatio ? height * devicePixelRatio : height;
-    this.element.style.height = `${height}px`;
+    this.dataCanvasElement.height = devicePixelRatio
+      ? height * devicePixelRatio
+      : height;
+    this.dataCanvasElement.style.height = `${height}px`;
     this.backgroundElement.height = devicePixelRatio
       ? height * devicePixelRatio
       : height;
     this.backgroundElement.style.height = `${height}px`;
+    this.interactionCanvasElement.height = devicePixelRatio
+      ? height * devicePixelRatio
+      : height;
+    this.interactionCanvasElement.style.height = `${height}px`;
   }
 
   setDpr(dpr: number) {
@@ -173,6 +252,10 @@ export class Canvas extends EventDispatcher {
 
   getHeight() {
     return this.height;
+  }
+
+  getDpr() {
+    return this.dpr;
   }
 
   detectSelectedAreaExtendDirection(coord: Coord): ButtonDirection | null {
@@ -199,26 +282,26 @@ export class Canvas extends EventDispatcher {
     // this.selectedArea,
     // );
     const top = {
-      x: this.canvasInfo.lefTopX,
-      y: this.canvasInfo.lefTopY,
+      x: this.canvasInfo.leftTopX,
+      y: this.canvasInfo.leftTopY,
       width: this.canvasInfo.width,
       height: this.canvasInfo.height,
     };
     const bottom = {
-      x: this.canvasInfo.lefTopX,
-      y: this.canvasInfo.lefTopY + this.canvasInfo.height,
+      x: this.canvasInfo.leftTopX,
+      y: this.canvasInfo.leftTopY + this.canvasInfo.height,
       width: this.canvasInfo.width,
       height: scaledYHeight,
     };
     const left = {
-      x: this.canvasInfo.lefTopX,
-      y: this.canvasInfo.lefTopY,
+      x: this.canvasInfo.leftTopX,
+      y: this.canvasInfo.leftTopY,
       width: scaledXWidth,
       height: this.canvasInfo.height,
     };
     const right = {
-      x: this.canvasInfo.lefTopX + this.canvasInfo.width,
-      y: this.canvasInfo.lefTopY,
+      x: this.canvasInfo.leftTopX + this.canvasInfo.width,
+      y: this.canvasInfo.leftTopY,
       width: scaledXWidth,
       height: this.canvasInfo.height,
     };
@@ -310,14 +393,14 @@ export class Canvas extends EventDispatcher {
     const newWidth = this.capturedCanvasInfo.width + widthExtensionOffset;
     const newHeight = this.capturedCanvasInfo.height + heightExtensionOffset;
     if (direction === ButtonDirection.TOP) {
-      this.canvasInfo.lefTopY =
-        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
+      this.canvasInfo.leftTopY =
+        this.capturedCanvasInfo.leftTopY - heightExtensionOffset;
       this.setCanvasHeight(newHeight);
     } else if (direction === ButtonDirection.BOTTOM) {
       this.setCanvasHeight(newHeight);
     } else if (direction === ButtonDirection.LEFT) {
-      this.canvasInfo.lefTopX =
-        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.canvasInfo.leftTopX =
+        this.capturedCanvasInfo.leftTopX - widthExtensionOffset;
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.RIGHT) {
       this.setCanvasWidth(newWidth);
@@ -340,25 +423,78 @@ export class Canvas extends EventDispatcher {
     const newWidth = this.capturedCanvasInfo.width + widthExtensionOffset;
     const newHeight = this.capturedCanvasInfo.height + heightExtensionOffset;
     if (direction === ButtonDirection.TOPLEFT) {
-      this.canvasInfo.lefTopY =
-        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
-      this.canvasInfo.lefTopX =
-        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.canvasInfo.leftTopY =
+        this.capturedCanvasInfo.leftTopY - heightExtensionOffset;
+      this.canvasInfo.leftTopX =
+        this.capturedCanvasInfo.leftTopX - widthExtensionOffset;
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.TOPRIGHT) {
-      this.canvasInfo.lefTopY =
-        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
+      this.canvasInfo.leftTopY =
+        this.capturedCanvasInfo.leftTopY - heightExtensionOffset;
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.BOTTOMLEFT) {
-      this.canvasInfo.lefTopX =
-        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.canvasInfo.leftTopX =
+        this.capturedCanvasInfo.leftTopX - widthExtensionOffset;
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.BOTTOMRIGHT) {
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
+    }
+  }
+
+  undo() {
+    if (this.undoHistory.length === 0) return;
+    const action = this.undoHistory.pop();
+    const inverseAction = action?.createInverseAction();
+    this.commitAction(inverseAction!);
+    this.redoHistory.push(action!);
+  }
+
+  redo() {
+    if (this.redoHistory.length === 0) return;
+    const action = this.redoHistory.pop();
+    this.commitAction(action!);
+    this.undoHistory.push(action!);
+  }
+
+  commitAction(action: Action) {
+    const type = action.getType();
+    switch (type) {
+      case ActionType.Sketch:
+        const brushColorAction = action as SketchAction;
+        for (let i = 0; i < brushColorAction.getData().length; i++) {
+          this.data.push(brushColorAction.getData()[i]);
+        }
+        break;
+      case ActionType.Erase:
+        const brushEraseAction = action as SketchEraseAction;
+        // this.data.splice(brushEraseAction.getHistoryIndex(), 1);
+        const brushEraseIds = brushEraseAction.getData().map(d => d.id);
+        this.data = this.data.filter(d => !brushEraseIds.includes(d.id));
+        break;
+      case ActionType.CanvasSizeChange:
+        const canvasSizeChangeAction = action as CanvasSizeChangeAction;
+        this.canvasInfo = canvasSizeChangeAction.getNewCanvasInfo();
+        break;
+    }
+    this.emitDataChangeEvent({
+      data: this.data,
+      canvasHeight: this.canvasInfo.height,
+      canvasWidth: this.canvasInfo.width,
+      canvasLeftTopX: this.canvasInfo.leftTopX,
+      canvasLeftTopY: this.canvasInfo.leftTopY,
+    });
+    this.render();
+  }
+
+  onKeyDown(e: any) {
+    if (e.code === "KeyZ" && (e.ctrlKey || e.metaKey)) {
+      this.undo();
+    } else if (e.code === "KeyY" && (e.ctrlKey || e.metaKey)) {
+      this.redo();
     }
   }
 
@@ -401,7 +537,11 @@ export class Canvas extends EventDispatcher {
         return;
       }
     }
-    const point = getPointFromTouchyEvent(evt, this.element, this.panZoom);
+    const point = getPointFromTouchyEvent(
+      evt,
+      this.interactionCanvasElement,
+      this.panZoom,
+    );
     const currentMousePos: Coord = { x: point.offsetX, y: point.offsetY };
     this.panPoint.lastMousePos = currentMousePos;
     const mouseDiff = diffPoints(lastMousePos, currentMousePos);
@@ -410,10 +550,12 @@ export class Canvas extends EventDispatcher {
     return;
   };
 
+  drawButtons() {}
+
   handlePinchZoom(evt: TouchyEvent) {
     const newPanZoom = calculateNewPanZoomFromPinchZoom(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       this.panZoom,
       this.zoomSensitivity,
       this.pinchZoomDiff,
@@ -431,7 +573,7 @@ export class Canvas extends EventDispatcher {
     const mouseDownPanZoom = this.mouseDownPanZoom!;
     const mouseCartCoord = getMouseCartCoord(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       mouseDownPanZoom,
       this.dpr,
     );
@@ -481,11 +623,15 @@ export class Canvas extends EventDispatcher {
 
   onMouseDown(evt: TouchyEvent) {
     evt.preventDefault();
-    const point = getPointFromTouchyEvent(evt, this.element, this.panZoom);
+    const point = getPointFromTouchyEvent(
+      evt,
+      this.interactionCanvasElement,
+      this.panZoom,
+    );
     this.panPoint.lastMousePos = { x: point.offsetX, y: point.offsetY };
     const mouseCartCoord = getMouseCartCoord(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       this.panZoom,
       this.dpr,
     );
@@ -512,23 +658,28 @@ export class Canvas extends EventDispatcher {
         offsetXAmount: 0,
       };
       this.capturedCanvasInfo = {
-        lefTopX: this.canvasInfo.lefTopX,
-        lefTopY: this.canvasInfo.lefTopY,
+        leftTopX: this.canvasInfo.leftTopX,
+        leftTopY: this.canvasInfo.leftTopY,
         width: this.canvasInfo.width,
         height: this.canvasInfo.height,
       };
-      touchy(this.element, addEvent, "mousemove", this.handleExtension);
+      touchy(
+        this.interactionCanvasElement,
+        addEvent,
+        "mousemove",
+        this.handleExtension,
+      );
       return;
     }
 
     const isPointInsideCanvas = getIsPointInsideRegion(mouseCartCoord, {
       startWorldPos: {
-        x: this.canvasInfo.lefTopX,
-        y: this.canvasInfo.lefTopY,
+        x: this.canvasInfo.leftTopX,
+        y: this.canvasInfo.leftTopY,
       },
       endWorldPos: {
-        x: this.canvasInfo.lefTopX + this.canvasInfo.width,
-        y: this.canvasInfo.lefTopY + this.canvasInfo.height,
+        x: this.canvasInfo.leftTopX + this.canvasInfo.width,
+        y: this.canvasInfo.leftTopY + this.canvasInfo.height,
       },
     });
     if (isPointInsideCanvas) {
@@ -539,28 +690,40 @@ export class Canvas extends EventDispatcher {
 
     if (isPointInsideCanvas) {
       const strokeDataPoint: Array<Coord> = [];
-      this.brushPoints.push({
-        color: this.brushColor,
+      this.data.push({
+        id: getNewGUIDString(),
+        color: this.brushTool === SketchTool.PEN ? this.brushColor : "#fff",
         strokeWidth: this.strokeWidth,
         points: strokeDataPoint,
       });
       this.currentBrushPoints = strokeDataPoint;
-      if (this.brushTool === PenTool.PEN) {
+      if (this.brushTool === SketchTool.PEN) {
         this.mouseMode = MouseMode.DRAWING;
         this.currentBrushPoints.push({
           x: mouseCartCoord.x,
           y: mouseCartCoord.y,
         });
-      } else if (this.brushTool === PenTool.ERASER) {
-        this.currentBrushPoints.push({
+      } else if (this.brushTool === SketchTool.ERASER) {
+        this.eraserPoints = [];
+        this.eraserPoints.push({
           x: mouseCartCoord.x,
           y: mouseCartCoord.y,
         });
       }
     }
     if (this.mouseMode === MouseMode.PANNING) {
-      touchy(this.element, addEvent, "mousemove", this.handlePanning);
-      touchy(this.element, addEvent, "mousemove", this.handlePinchZoom);
+      touchy(
+        this.interactionCanvasElement,
+        addEvent,
+        "mousemove",
+        this.handlePanning,
+      );
+      touchy(
+        this.interactionCanvasElement,
+        addEvent,
+        "mousemove",
+        this.handlePinchZoom,
+      );
     }
     this.render();
   }
@@ -569,7 +732,7 @@ export class Canvas extends EventDispatcher {
     evt.preventDefault();
     const mouseCartCoord = getMouseCartCoord(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       this.panZoom,
       this.dpr,
     );
@@ -580,26 +743,133 @@ export class Canvas extends EventDispatcher {
     if (!this.currentBrushPoints) {
       return;
     }
-    if (this.brushTool === PenTool.PEN) {
+    if (this.brushTool === SketchTool.PEN) {
       this.currentBrushPoints.push({
         x: mouseCartCoord.x,
         y: mouseCartCoord.y,
       });
-    } else if (this.brushTool === PenTool.ERASER) {
-      this.currentBrushPoints.push({
+    } else if (this.brushTool === SketchTool.ERASER) {
+      if (!this.eraserPoints) {
+        return;
+      }
+      this.eraserPoints.push({
         x: mouseCartCoord.x,
         y: mouseCartCoord.y,
       });
+      if (this.eraserPoints.length > 2) {
+        this.eraserPoints.shift();
+      }
+      const point1 = this.eraserPoints[0];
+      const point2 = this.eraserPoints[1];
+      this.eraseSketch(point1, point2);
     }
     this.render();
   }
 
+  eraseSketch(eraserPoint1: Coord, eraserPoint2: Coord) {
+    for (let i = 0; i < this.data.length; i++) {
+      const line = this.data[i];
+      for (let j = 0; j < line.points.length - 1; j++) {
+        const linePoint1 = line.points[j];
+        const linePoint2 = line.points[j + 1];
+        const isIntersect = checkLineIntersection(
+          eraserPoint1,
+          eraserPoint2,
+          linePoint1,
+          linePoint2,
+        );
+        if (isIntersect.onLine1 && isIntersect.onLine2) {
+          this.data[i].isVisible = false;
+          this.erasedDataIndicesWhileInteraction.add(i);
+        }
+      }
+    }
+    this.render();
+  }
+
+  changeBrushColor(color: string) {
+    this.brushColor = color;
+  }
+
+  changeBrushTool(tool: SketchTool) {
+    this.brushTool = tool;
+  }
+
+  changeStrokeWidth(width: number) {
+    this.strokeWidth = width;
+  }
+
+  recordAction(action: Action) {
+    this.undoHistory.push(action);
+    this.redoHistory = [];
+    this.emitDataChangeEvent({
+      data: this.data,
+      canvasHeight: this.canvasInfo.height,
+      canvasWidth: this.canvasInfo.width,
+      canvasLeftTopX: this.canvasInfo.leftTopX,
+      canvasLeftTopY: this.canvasInfo.leftTopY,
+    });
+  }
+
   onMouseUp(evt: TouchyEvent) {
     evt.preventDefault();
+    if (this.mouseMode === MouseMode.DRAWING) {
+      if (this.brushTool === SketchTool.PEN) {
+        if (!this.currentBrushPoints) {
+          return;
+        }
+        if (this.currentBrushPoints.length === 0) {
+          return;
+        }
+        const recentDrawnStroke = this.data[this.data.length - 1];
+        this.recordAction(
+          new SketchAction([recentDrawnStroke], [this.data.length - 1]),
+        );
+        this.emitStrokeEndEvent({
+          data: recentDrawnStroke,
+          brushColor: recentDrawnStroke.color,
+        });
+      } else if (this.brushTool === SketchTool.ERASER) {
+        if (this.erasedDataIndicesWhileInteraction.size === 0) {
+          return;
+        }
+        const sketchIndicesToErase = Array.from(
+          this.erasedDataIndicesWhileInteraction,
+        );
+
+        const sketchesToErase = sketchIndicesToErase.map(
+          index => this.data[index],
+        );
+
+        this.recordAction(
+          new SketchEraseAction(sketchesToErase, sketchIndicesToErase),
+        );
+        this.erasedDataIndicesWhileInteraction.clear();
+      }
+    } else if (this.mouseMode === MouseMode.EXTENDING) {
+      this.recordAction(
+        new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
+      );
+    }
     this.mouseMode === MouseMode.PANNING;
-    touchy(this.element, removeEvent, "mousemove", this.handlePanning);
-    touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
-    touchy(this.element, removeEvent, "mousemove", this.handleExtension);
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePanning,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePinchZoom,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handleExtension,
+    );
     this.currentBrushPoints = null;
     this.pinchZoomDiff = null;
     this.mouseDownWorldPos = null;
@@ -612,47 +882,117 @@ export class Canvas extends EventDispatcher {
 
   onMouseOut(evt: TouchyEvent) {
     evt.preventDefault();
+    if (this.mouseMode === MouseMode.DRAWING) {
+      if (this.brushTool === SketchTool.PEN) {
+        if (!this.currentBrushPoints) {
+          return;
+        }
+        if (this.currentBrushPoints.length === 0) {
+          return;
+        }
+        const recentDrawnStroke = this.data[this.data.length - 1];
+        this.recordAction(
+          new SketchAction([recentDrawnStroke], [this.data.length - 1]),
+        );
+        this.emitStrokeEndEvent({
+          data: recentDrawnStroke,
+          brushColor: recentDrawnStroke.color,
+        });
+      } else if (this.brushTool === SketchTool.ERASER) {
+        if (this.erasedDataIndicesWhileInteraction.size === 0) {
+          return;
+        }
+        const sketchIndicesToErase = Array.from(
+          this.erasedDataIndicesWhileInteraction,
+        );
+
+        const sketchesToErase = sketchIndicesToErase.map(
+          index => this.data[index],
+        );
+
+        this.recordAction(
+          new SketchEraseAction(sketchesToErase, sketchIndicesToErase),
+        );
+        this.erasedDataIndicesWhileInteraction.clear();
+      }
+    } else if (this.mouseMode === MouseMode.EXTENDING) {
+      this.recordAction(
+        new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
+      );
+    }
+    this.mouseMode === MouseMode.PANNING;
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePanning,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePinchZoom,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handleExtension,
+    );
     this.currentBrushPoints = null;
-    touchy(this.element, removeEvent, "mousemove", this.handlePanning);
-    touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
-    touchy(this.element, removeEvent, "mousemove", this.handleExtension);
+    this.pinchZoomDiff = null;
+    this.mouseDownWorldPos = null;
+    this.mouseDownPanZoom = null;
+    this.extensionPoint.offsetXAmount = 0;
+    this.extensionPoint.offsetYAmount = 0;
+    this.previousMouseMoveWorldPos = null;
+    return;
   }
 
-  setPanZoom({
-    offset,
-    scale,
-  }: Partial<PanZoom> & { baseColumnCount?: number; baseRowCount?: number }) {
+  setPanZoom({ offset, scale }: Partial<PanZoom>) {
     if (scale) {
       this.panZoom.scale = scale;
     }
     if (offset) {
       const correctedOffset = { ...offset };
-
+      const excessHeight = this.canvasInfo.height - DefaultCanvasHeight;
+      const excessWidth = this.canvasInfo.width - DefaultCanvasWidth;
       // rowCount * this.gridSquareLength * this.panZoom.scale < this.height
       // Offset changes when grid is bigger than canvas
-      const isCanvasWidthBiggerThanElement =
-        this.canvasInfo.width * this.panZoom.scale > this.height;
       const isCanvasHeightBiggerThanElement =
-        this.canvasInfo.height * this.panZoom.scale > this.width;
+        this.canvasInfo.height * this.panZoom.scale > this.height;
+      const isCanvasWidthBiggerThanElement =
+        this.canvasInfo.width * this.panZoom.scale > this.width;
 
-      const minXPosition = isCanvasHeightBiggerThanElement
-        ? -(this.canvasInfo.width * this.panZoom.scale) -
-          (this.width / 2) * this.panZoom.scale
-        : (-this.width / 2) * this.panZoom.scale;
+      const minXPosition = isCanvasWidthBiggerThanElement
+        ? -this.canvasInfo.width * this.panZoom.scale -
+          (this.width / 2) * this.panZoom.scale +
+          -this.canvasInfo.leftTopX * this.panZoom.scale
+        : -this.canvasInfo.leftTopX * this.panZoom.scale +
+          (-this.width / 2) * this.panZoom.scale;
 
-      const minYPosition = isCanvasWidthBiggerThanElement
+      const minYPosition = isCanvasHeightBiggerThanElement
         ? -this.canvasInfo.height * this.panZoom.scale -
-          (this.height / 2) * this.panZoom.scale
-        : (-this.height / 2) * this.panZoom.scale;
+          (this.height / 2) * this.panZoom.scale +
+          -this.canvasInfo.leftTopY * this.panZoom.scale
+        : -this.canvasInfo.leftTopY * this.panZoom.scale +
+          (-this.height / 2) * this.panZoom.scale;
 
-      const maxXPosition = isCanvasHeightBiggerThanElement
-        ? this.width - (this.width / 2) * this.panZoom.scale
-        : this.width -
+      const maxXPosition = isCanvasWidthBiggerThanElement
+        ? this.width -
+          (this.width / 2) * this.panZoom.scale +
+          -this.canvasInfo.leftTopX * this.panZoom.scale
+        : -this.canvasInfo.leftTopX * this.panZoom.scale +
+          this.width -
           this.canvasInfo.width * this.panZoom.scale -
           (this.width / 2) * this.panZoom.scale;
-      const maxYPosition = isCanvasWidthBiggerThanElement
-        ? this.height - (this.height / 2) * this.panZoom.scale
-        : this.height -
+
+      const maxYPosition = isCanvasHeightBiggerThanElement
+        ? this.height -
+          (this.height / 2) * this.panZoom.scale +
+          -this.canvasInfo.leftTopY * this.panZoom.scale
+        : -this.canvasInfo.leftTopY * this.panZoom.scale +
+          this.height -
           this.canvasInfo.height * this.panZoom.scale -
           (this.height / 2) * this.panZoom.scale;
       if (correctedOffset.x < minXPosition) {
@@ -679,13 +1019,72 @@ export class Canvas extends EventDispatcher {
   }
 
   destroy() {
-    touchy(this.element, removeEvent, "mouseup", this.onMouseUp);
-    touchy(this.element, removeEvent, "mouseout", this.onMouseOut);
-    touchy(this.element, removeEvent, "mousedown", this.onMouseDown);
-    touchy(this.element, removeEvent, "mousemove", this.onMouseMove);
-    touchy(this.element, removeEvent, "mousemove", this.handlePanning);
-    touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
-    this.element.removeEventListener("wheel", this.handleWheel);
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mouseup",
+      this.onMouseUp,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mouseout",
+      this.onMouseOut,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousedown",
+      this.onMouseDown,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.onMouseMove,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePanning,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePinchZoom,
+    );
+    this.interactionCanvasElement.removeEventListener(
+      "wheel",
+      this.handleWheel,
+    );
+  }
+
+  getCanvasInfo() {
+    return this.canvasInfo;
+  }
+
+  getPanZoom() {
+    return this.panZoom;
+  }
+
+  getData() {
+    return this.data;
+  }
+
+  getDataCanvasElement() {
+    return this.dataCanvasElement;
+  }
+
+  getImageBlob() {
+    return createImageFromPartOfCanvas(
+      this.dataCanvasElement,
+      this.canvasInfo.leftTopX,
+      this.canvasInfo.leftTopY,
+      this.canvasInfo.width,
+      this.canvasInfo.height,
+    );
   }
 
   render() {
@@ -697,8 +1096,8 @@ export class Canvas extends EventDispatcher {
     this.ctx.restore();
 
     const convertedLeftTopScreenPoint = convertCartesianToScreen(
-      this.element,
-      { x: this.canvasInfo.lefTopX, y: this.canvasInfo.lefTopY },
+      this.interactionCanvasElement,
+      { x: this.canvasInfo.leftTopX, y: this.canvasInfo.leftTopY },
       this.dpr,
     );
     const correctedLeftTopScreenPoint = getScreenPoint(
@@ -747,8 +1146,12 @@ export class Canvas extends EventDispatcher {
 
     // brush
     this.ctx.save();
-    for (let i = 0; i < this.brushPoints.length; i++) {
-      const brushStroke = this.brushPoints[i];
+    for (let i = 0; i < this.data.length; i++) {
+      const brushStroke = this.data[i];
+      const isVisible = brushStroke.isVisible;
+      if (isVisible !== undefined && !isVisible) {
+        continue;
+      }
       this.ctx.beginPath();
       this.ctx.strokeStyle = brushStroke.color;
       this.ctx.lineWidth = brushStroke.strokeWidth * this.panZoom.scale;
@@ -757,7 +1160,7 @@ export class Canvas extends EventDispatcher {
       for (let j = 0; j < brushStroke.points.length; j++) {
         const point = brushStroke.points[j];
         const convertedScreenPoint = convertCartesianToScreen(
-          this.element,
+          this.interactionCanvasElement,
           point,
           this.dpr,
         );
@@ -780,4 +1183,4 @@ export class Canvas extends EventDispatcher {
   }
 }
 
-export default Canvas;
+export default Editor;

@@ -1,52 +1,52 @@
 export interface Coord {
-    x: number;
-    y: number;
+  x: number;
+  y: number;
 }
 
 export interface Dimensions {
-    width: number;
-    height: number;
+  width: number;
+  height: number;
 }
 
 export type ButtonDimensions = Coord & Dimensions;
 
 export type PanZoom = {
-    scale: number;
-    offset: Coord;
+  scale: number;
+  offset: Coord;
 };
 
 export type PixelData = {
-    color: string;
+  color: string;
 };
 
 export interface ImageDownloadOptions {
-    isGridVisible?: boolean;
+  isGridVisible?: boolean;
 }
 
 export type DottingData = Map<number, Map<number, PixelData>>;
 
 export interface PixelModifyItem {
-    rowIndex: number;
-    columnIndex: number;
-    color: string;
+  rowIndex: number;
+  columnIndex: number;
+  color: string;
 }
 
 export interface ColorChangeItem extends PixelModifyItem {
-    previousColor: string;
+  previousColor: string;
 }
 
 export enum CanvasEvents {
-    DATA_CHANGE = "dataChange",
-    GRID_CHANGE = "gridChange",
-    STROKE_END = "strokeEnd",
-    BRUSH_CHANGE = "brushChange",
-    HOVER_PIXEL_CHANGE = "hoverPixelChange",
+  DATA_CHANGE = "dataChange",
+  GRID_CHANGE = "gridChange",
+  STROKE_END = "strokeEnd",
+  BRUSH_CHANGE = "brushChange",
+  HOVER_PIXEL_CHANGE = "hoverPixelChange",
 }
 
-export enum PenTool {
-    PEN = "PEN",
-    ERASER = "ERASER",
-    NONE = "NONE",
+export enum SketchTool {
+  PEN = "PEN",
+  ERASER = "ERASER",
+  NONE = "NONE",
 }
 
 export type CanvasDataChangeParams = { data: DottingData };
@@ -54,56 +54,59 @@ export type CanvasDataChangeParams = { data: DottingData };
 export type CanvasDataChangeHandler = (params: CanvasDataChangeParams) => void;
 
 export type CanvasGridChangeParams = {
-    dimensions: {
-        columnCount: number;
-        rowCount: number;
-    };
-    indices: {
-        topRowIndex: number;
-        bottomRowIndex: number;
-        leftColumnIndex: number;
-        rightColumnIndex: number;
-    };
+  dimensions: {
+    columnCount: number;
+    rowCount: number;
+  };
+  indices: {
+    topRowIndex: number;
+    bottomRowIndex: number;
+    leftColumnIndex: number;
+    rightColumnIndex: number;
+  };
 };
 
-
 export enum MouseMode {
-    PANNING = "PANNING",
-    EXTENDING = "EXTENDING",
-    DRAWING = "DRAWING",
+  PANNING = "PANNING",
+  EXTENDING = "EXTENDING",
+  DRAWING = "DRAWING",
 }
 
 export enum ButtonDirection {
-    TOP = "TOP",
-    BOTTOM = "BOTTOM",
-    LEFT = "LEFT",
-    RIGHT = "RIGHT",
-    TOPLEFT = "TOPLEFT",
-    TOPRIGHT = "TOPRIGHT",
-    BOTTOMLEFT = "BOTTOMLEFT",
-    BOTTOMRIGHT = "BOTTOMRIGHT",
+  TOP = "TOP",
+  BOTTOM = "BOTTOM",
+  LEFT = "LEFT",
+  RIGHT = "RIGHT",
+  TOPLEFT = "TOPLEFT",
+  TOPRIGHT = "TOPRIGHT",
+  BOTTOMLEFT = "BOTTOMLEFT",
+  BOTTOMRIGHT = "BOTTOMRIGHT",
 }
 
 export type CanvasGridChangeHandler = (params: CanvasGridChangeParams) => void;
 
 export type CanvasStrokeEndParams = {
-    strokedPixels: Array<ColorChangeItem>;
-    data: DottingData;
-    strokeTool: PenTool;
+  strokedPixels: Array<ColorChangeItem>;
+  data: DottingData;
+  strokeTool: SketchTool;
 };
 
 export type CanvasStrokeEndHandler = (params: CanvasStrokeEndParams) => void;
 
-
 export type CanvasHoverPixelChangeParams = {
-    indices: {
-        rowIndex: number;
-        columnIndex: number;
-    } | null;
+  indices: {
+    rowIndex: number;
+    columnIndex: number;
+  } | null;
 };
 
 export type CanvasHoverPixelChangeHandler = (
-    params: CanvasHoverPixelChangeParams,
+  params: CanvasHoverPixelChangeParams,
 ) => void;
 
-
+export type CanvasDataInfo = {
+  leftTopX: number;
+  leftTopY: number;
+  width: number;
+  height: number;
+};
