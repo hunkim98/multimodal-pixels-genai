@@ -1,4 +1,4 @@
-import { BrushData, BrushDataElement } from "./Canvas";
+import { BrushData, BrushDataElement } from "./Editor";
 
 export enum CanvasEvents {
   DATA_CHANGE = "dataChange",

@@ -1,6 +1,6 @@
 import { Action, ActionType } from "./Action";
 import { BrushColorAction } from "./BrushColorAction";
-import { BrushDataElement } from "./Canvas";
+import { BrushDataElement } from "./Editor";
 
 export class BrushEraseAction extends Action {
   type = ActionType.BrushErase;

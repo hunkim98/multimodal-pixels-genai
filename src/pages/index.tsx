@@ -29,7 +29,7 @@ import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
 import OutlineCanvas from "@/components/OutlineCanvas";
 import BrushCanvas from "@/components/BrushCanvas";
 import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
-import { BrushData } from "@/components/BrushCanvas/Canvas";
+import { BrushData } from "@/components/BrushCanvas/Editor";
 
 const inter = Inter({ subsets: ["latin"] });
 

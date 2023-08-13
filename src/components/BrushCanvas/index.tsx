@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Canvas, { BrushData } from "./Canvas";
+import Editor, { BrushData } from "./Editor";
 import {
   Button,
   Content,
@@ -53,7 +53,8 @@ export interface BrushCanvasProps {
 const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [editor, setEditor] = useState<Canvas | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const [dataCanvas, setDataCanvas] = useState<HTMLCanvasElement | null>(null);
   const [interactionCanvas, setInteractionCanvas] =
     useState<HTMLCanvasElement | null>(null);
   const [backgroundCanvas, setBackgroundCanvas] =
@@ -66,7 +67,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
       return;
     }
     element.style["touchAction"] = "none";
-    setInteractionCanvas(element);
+    setDataCanvas(element);
   }, []);
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
@@ -230,13 +231,14 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   }, [editor, containerRef]);
 
   useEffect(() => {
-    if (!interactionCanvas || !backgroundCanvas) {
+    if (!dataCanvas || !backgroundCanvas || !interactionCanvas) {
       return;
     }
 
-    const canvas = new Canvas(
-      interactionCanvas,
+    const canvas = new Editor(
+      dataCanvas,
       backgroundCanvas,
+      interactionCanvas,
       350,
       350,
       props.canvasWidth,
@@ -249,7 +251,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     return () => {
       editor?.destroy();
     };
-  }, [backgroundCanvas, interactionCanvas]);
+  }, [backgroundCanvas, dataCanvas, interactionCanvas]);
 
   const changeBrushColor = useCallback(
     (color: string) => {
@@ -341,6 +343,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
             ref={gotInteractionCanvasRef}
             style={{
               position: "absolute",
+              touchAction: "none",
               ...props.style,
             }}
           />

@@ -52,7 +52,7 @@ export type BrushDataElement = {
 
 export type BrushData = Array<BrushDataElement>;
 
-export class Canvas extends EventDispatcher {
+export class Editor extends EventDispatcher {
   private width: number = 0;
   private height: number = 0;
   private panZoom: PanZoom = {
@@ -102,12 +102,14 @@ export class Canvas extends EventDispatcher {
     offsetXAmount: 0,
   };
   private ctx: CanvasRenderingContext2D;
-  private element: HTMLCanvasElement;
+  private dataCanvasElement: HTMLCanvasElement;
   private backgroundElement: HTMLCanvasElement;
+  private interactionCanvasElement: HTMLCanvasElement;
 
   constructor(
-    element: HTMLCanvasElement,
+    dataCanvasElement: HTMLCanvasElement,
     backgroundElement: HTMLCanvasElement,
+    interactionCanvasElement: HTMLCanvasElement,
     width: number,
     height: number,
     canvasWidth?: number,
@@ -117,11 +119,14 @@ export class Canvas extends EventDispatcher {
     initData?: BrushData,
   ) {
     super();
-    this.element = element;
+    this.dataCanvasElement = dataCanvasElement;
     this.backgroundElement = backgroundElement;
+    this.interactionCanvasElement = interactionCanvasElement;
     this.width = width;
     this.height = height;
-    this.ctx = this.element.getContext("2d") as CanvasRenderingContext2D;
+    this.ctx = this.dataCanvasElement.getContext(
+      "2d",
+    ) as CanvasRenderingContext2D;
     this.data = initData || [];
     this.canvasInfo = {
       lefTopX: canvasLeftTopX || 0,
@@ -153,11 +158,26 @@ export class Canvas extends EventDispatcher {
     this.onMouseMove = this.onMouseMove.bind(this);
 
     // add event listeners
-    touchy(this.element, addEvent, "mousedown", this.onMouseDown);
-    touchy(this.element, addEvent, "mouseup", this.onMouseUp);
-    touchy(this.element, addEvent, "mouseout", this.onMouseOut);
-    touchy(this.element, addEvent, "mousemove", this.onMouseMove);
-    this.element.addEventListener("wheel", this.handleWheel);
+    touchy(
+      this.interactionCanvasElement,
+      addEvent,
+      "mousedown",
+      this.onMouseDown,
+    );
+    touchy(this.interactionCanvasElement, addEvent, "mouseup", this.onMouseUp);
+    touchy(
+      this.interactionCanvasElement,
+      addEvent,
+      "mouseout",
+      this.onMouseOut,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      addEvent,
+      "mousemove",
+      this.onMouseMove,
+    );
+    this.interactionCanvasElement.addEventListener("wheel", this.handleWheel);
   }
 
   emitDataChangeEvent(params: CanvasDataChangeParams) {
@@ -190,22 +210,34 @@ export class Canvas extends EventDispatcher {
 
   setWidth(width: number, devicePixelRatio?: number) {
     this.width = width;
-    this.element.width = devicePixelRatio ? width * devicePixelRatio : width;
-    this.element.style.width = `${width}px`;
+    this.dataCanvasElement.width = devicePixelRatio
+      ? width * devicePixelRatio
+      : width;
+    this.dataCanvasElement.style.width = `${width}px`;
     this.backgroundElement.width = devicePixelRatio
       ? width * devicePixelRatio
       : width;
     this.backgroundElement.style.width = `${width}px`;
+    this.interactionCanvasElement.width = devicePixelRatio
+      ? width * devicePixelRatio
+      : width;
+    this.interactionCanvasElement.style.width = `${width}px`;
   }
 
   setHeight(height: number, devicePixelRatio?: number) {
     this.height = height;
-    this.element.height = devicePixelRatio ? height * devicePixelRatio : height;
-    this.element.style.height = `${height}px`;
+    this.dataCanvasElement.height = devicePixelRatio
+      ? height * devicePixelRatio
+      : height;
+    this.dataCanvasElement.style.height = `${height}px`;
     this.backgroundElement.height = devicePixelRatio
       ? height * devicePixelRatio
       : height;
     this.backgroundElement.style.height = `${height}px`;
+    this.interactionCanvasElement.height = devicePixelRatio
+      ? height * devicePixelRatio
+      : height;
+    this.interactionCanvasElement.style.height = `${height}px`;
   }
 
   setDpr(dpr: number) {
@@ -495,7 +527,11 @@ export class Canvas extends EventDispatcher {
         return;
       }
     }
-    const point = getPointFromTouchyEvent(evt, this.element, this.panZoom);
+    const point = getPointFromTouchyEvent(
+      evt,
+      this.interactionCanvasElement,
+      this.panZoom,
+    );
     const currentMousePos: Coord = { x: point.offsetX, y: point.offsetY };
     this.panPoint.lastMousePos = currentMousePos;
     const mouseDiff = diffPoints(lastMousePos, currentMousePos);
@@ -509,7 +545,7 @@ export class Canvas extends EventDispatcher {
   handlePinchZoom(evt: TouchyEvent) {
     const newPanZoom = calculateNewPanZoomFromPinchZoom(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       this.panZoom,
       this.zoomSensitivity,
       this.pinchZoomDiff,
@@ -527,7 +563,7 @@ export class Canvas extends EventDispatcher {
     const mouseDownPanZoom = this.mouseDownPanZoom!;
     const mouseCartCoord = getMouseCartCoord(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       mouseDownPanZoom,
       this.dpr,
     );
@@ -577,11 +613,15 @@ export class Canvas extends EventDispatcher {
 
   onMouseDown(evt: TouchyEvent) {
     evt.preventDefault();
-    const point = getPointFromTouchyEvent(evt, this.element, this.panZoom);
+    const point = getPointFromTouchyEvent(
+      evt,
+      this.interactionCanvasElement,
+      this.panZoom,
+    );
     this.panPoint.lastMousePos = { x: point.offsetX, y: point.offsetY };
     const mouseCartCoord = getMouseCartCoord(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       this.panZoom,
       this.dpr,
     );
@@ -613,7 +653,12 @@ export class Canvas extends EventDispatcher {
         width: this.canvasInfo.width,
         height: this.canvasInfo.height,
       };
-      touchy(this.element, addEvent, "mousemove", this.handleExtension);
+      touchy(
+        this.interactionCanvasElement,
+        addEvent,
+        "mousemove",
+        this.handleExtension,
+      );
       return;
     }
 
@@ -656,8 +701,18 @@ export class Canvas extends EventDispatcher {
       }
     }
     if (this.mouseMode === MouseMode.PANNING) {
-      touchy(this.element, addEvent, "mousemove", this.handlePanning);
-      touchy(this.element, addEvent, "mousemove", this.handlePinchZoom);
+      touchy(
+        this.interactionCanvasElement,
+        addEvent,
+        "mousemove",
+        this.handlePanning,
+      );
+      touchy(
+        this.interactionCanvasElement,
+        addEvent,
+        "mousemove",
+        this.handlePinchZoom,
+      );
     }
     this.render();
   }
@@ -666,7 +721,7 @@ export class Canvas extends EventDispatcher {
     evt.preventDefault();
     const mouseCartCoord = getMouseCartCoord(
       evt,
-      this.element,
+      this.interactionCanvasElement,
       this.panZoom,
       this.dpr,
     );
@@ -745,9 +800,24 @@ export class Canvas extends EventDispatcher {
       );
     }
     this.mouseMode === MouseMode.PANNING;
-    touchy(this.element, removeEvent, "mousemove", this.handlePanning);
-    touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
-    touchy(this.element, removeEvent, "mousemove", this.handleExtension);
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePanning,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePinchZoom,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handleExtension,
+    );
     this.currentBrushPoints = null;
     this.pinchZoomDiff = null;
     this.mouseDownWorldPos = null;
@@ -786,9 +856,24 @@ export class Canvas extends EventDispatcher {
         new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
       );
     }
-    touchy(this.element, removeEvent, "mousemove", this.handlePanning);
-    touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
-    touchy(this.element, removeEvent, "mousemove", this.handleExtension);
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePanning,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePinchZoom,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handleExtension,
+    );
     this.currentBrushPoints = null;
   }
 
@@ -862,26 +947,59 @@ export class Canvas extends EventDispatcher {
   }
 
   destroy() {
-    touchy(this.element, removeEvent, "mouseup", this.onMouseUp);
-    touchy(this.element, removeEvent, "mouseout", this.onMouseOut);
-    touchy(this.element, removeEvent, "mousedown", this.onMouseDown);
-    touchy(this.element, removeEvent, "mousemove", this.onMouseMove);
-    touchy(this.element, removeEvent, "mousemove", this.handlePanning);
-    touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
-    this.element.removeEventListener("wheel", this.handleWheel);
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mouseup",
+      this.onMouseUp,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mouseout",
+      this.onMouseOut,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousedown",
+      this.onMouseDown,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.onMouseMove,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePanning,
+    );
+    touchy(
+      this.interactionCanvasElement,
+      removeEvent,
+      "mousemove",
+      this.handlePinchZoom,
+    );
+    this.interactionCanvasElement.removeEventListener(
+      "wheel",
+      this.handleWheel,
+    );
   }
 
   getData() {
     return this.data;
   }
 
-  getCanvasElement() {
-    return this.element;
+  getDataCanvasElement() {
+    return this.dataCanvasElement;
   }
 
   getImageBlob() {
     return createImageFromPartOfCanvas(
-      this.element,
+      this.dataCanvasElement,
       this.canvasInfo.lefTopX,
       this.canvasInfo.lefTopY,
       this.canvasInfo.width,
@@ -898,7 +1016,7 @@ export class Canvas extends EventDispatcher {
     this.ctx.restore();
 
     const convertedLeftTopScreenPoint = convertCartesianToScreen(
-      this.element,
+      this.interactionCanvasElement,
       { x: this.canvasInfo.lefTopX, y: this.canvasInfo.lefTopY },
       this.dpr,
     );
@@ -958,7 +1076,7 @@ export class Canvas extends EventDispatcher {
       for (let j = 0; j < brushStroke.points.length; j++) {
         const point = brushStroke.points[j];
         const convertedScreenPoint = convertCartesianToScreen(
-          this.element,
+          this.interactionCanvasElement,
           point,
           this.dpr,
         );
@@ -981,4 +1099,4 @@ export class Canvas extends EventDispatcher {
   }
 }
 
-export default Canvas;
+export default Editor;
