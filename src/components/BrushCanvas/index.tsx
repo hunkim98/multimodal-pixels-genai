@@ -107,6 +107,24 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     }
     const blob = editor?.getImageBlob();
     props.setBrushCanvasImageBlob(blob);
+    const tempCanvas = document.createElement("canvas");
+    const canvasInfo = editor.getCanvasInfo();
+    tempCanvas.width = canvasInfo.width;
+    tempCanvas.height = canvasInfo.height;
+    const ctx = tempCanvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasInfo.width, canvasInfo.height);
+    var img = new Image();
+
+    img.onload = function () {
+      ctx.drawImage(img, 0, 0);
+    };
+
+    img.src = URL.createObjectURL(blob);
+    document.body.appendChild(tempCanvas);
   }, [editor, props.setBrushCanvasImageBlob]);
 
   const addCanvasDataChangeListener = useCallback(
@@ -245,6 +263,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
       props.canvasHeight,
       props.canvasLeftTopX,
       props.canvasLeftTopY,
+      props.initData,
     );
     setEditor(canvas);
 
@@ -429,6 +448,25 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
           }}
           onChangeEnd={setFinalSelectedColor}
         />
+        <Flex direction="column">
+          <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
+          <Flex gap="size-100" wrap>
+            {Array.from(recentlyUsedColors).map(color => (
+              <div
+                key={color}
+                className={`w-6 h-6 rounded-full`}
+                style={{
+                  backgroundColor: color,
+                }}
+                onClick={() => {
+                  const newColor = parseColor(color);
+                  changeBrushTool(PenTool.PEN);
+                  setFinalSelectedColor(newColor);
+                }}
+              />
+            ))}
+          </Flex>
+        </Flex>
       </div>
     </Flex>
   );

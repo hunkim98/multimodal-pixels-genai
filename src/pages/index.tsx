@@ -83,6 +83,27 @@ export default function Home() {
     [modelInputs],
   );
 
+  // useEffect(() => {
+  //   if (!initialPixelDataArray) {
+  //     return;
+  //   }
+  //   const tempCanvas = document.createElement("canvas");
+  //   tempCanvas.width = 256;
+  //   tempCanvas.height = 256;
+  //   const ctx = tempCanvas.getContext("2d");
+
+  //   const base64String = createImageOutOfNestedColorArray(
+  //     initialPixelDataArray,
+  //   );
+  //   var img = new Image();
+  //   img.onload = function () {
+  //     ctx!.drawImage(img, 0, 0);
+  //   };
+
+  //   img.src = URL.createObjectURL(base64String as any);
+  //   document.body.appendChild(tempCanvas);
+  // }, [initialPixelDataArray]);
+
   return (
     <main className={`flex min-h-screen flex-col p-24 ${inter.className}`}>
       <div className="flex flex-row justify-center align-middle">

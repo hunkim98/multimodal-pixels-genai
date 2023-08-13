@@ -11,8 +11,19 @@ export const createImageOutOfNestedColorArray = (
   imageCanvas.width = columnCount * GRID_SQUARE_LENGTH;
   imageCanvas.height = rowCount * GRID_SQUARE_LENGTH;
   const imageContext = imageCanvas.getContext("2d")!;
+  imageContext.save();
+  imageContext.fillStyle = "#ffffff";
+  imageContext.fillRect(
+    0,
+    0,
+    columnCount * GRID_SQUARE_LENGTH,
+    rowCount * GRID_SQUARE_LENGTH,
+  );
+  imageContext.restore();
+
   for (let i = 0; i < rowCount; i++) {
     for (let j = 0; j < columnCount; j++) {
+      if (!nestedColorArray[i][j].color) continue;
       const pixelCoord = {
         x: j * GRID_SQUARE_LENGTH,
         y: i * GRID_SQUARE_LENGTH,

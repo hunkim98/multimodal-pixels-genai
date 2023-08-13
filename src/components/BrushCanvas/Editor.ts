@@ -989,6 +989,10 @@ export class Editor extends EventDispatcher {
     );
   }
 
+  getCanvasInfo() {
+    return this.canvasInfo;
+  }
+
   getData() {
     return this.data;
   }
