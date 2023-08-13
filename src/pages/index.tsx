@@ -55,6 +55,7 @@ import { blob } from "stream/consumers";
 import OutlineCanvas from "@/components/OutlineCanvas";
 import BrushCanvas from "@/components/BrushCanvas";
 import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
+import { BrushData } from "@/components/BrushCanvas/Canvas";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -65,29 +66,18 @@ enum AssistiveImageInputType {
 }
 
 export default function Home() {
-  const [isPixelCanvasOpen, setIsPixelCanvasOpen] = useState(false);
-  const dottingRef = useRef<DottingRef>(null);
-  const [brushTool, setBrushTool] = useState(BrushTool.DOT);
-  let [changingColor, setChangingColor] = useState(
-    parseColor("hsl(50, 100%, 50%)"),
-  );
-  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set(),
-  );
+  const [isAssistiveCanvasOpen, setIsAssistiveCanvasOpen] = useState(false);
   const [initialPixelDataArray, setInitialPixelDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
-  let [finalValue, setFinalValue] = useState(parseColor("hsl(50, 100%, 50%)"));
-  const [isGridVisible, setIsGridVisible] = useState(true);
-  const { clear, undo, redo } = useDotting(dottingRef);
+  const [initialBrushData, setInitialBrushData] = useState<{
+    canvasHeight: number;
+    canvasWidth: number;
+    canvasLeftTopX: number;
+    canvasLeftTopY: number;
+    data: BrushData;
+  }>();
+
   const [isModelActive, setIsModelActive] = useState(false);
-  const {
-    addDataChangeListener,
-    addStrokeEndListener,
-    addBrushChangeListener,
-  } = useHandlers(dottingRef);
-  const [brushSize, setBrushSize] = useState(1);
-  const { changeBrushColor, changeBrushTool, changeBrushPattern } =
-    useBrush(dottingRef);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
     useState<AssistiveImageInputType>(AssistiveImageInputType.PIXELS);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
@@ -117,106 +107,6 @@ export default function Home() {
     },
     [modelInputs],
   );
-  useEffect(() => {
-    switch (brushSize) {
-      case 1:
-        changeBrushPattern(brushSizeOne);
-        break;
-      case 2:
-        changeBrushPattern(brushSizeTwo);
-        break;
-      case 3:
-        changeBrushPattern(brushSizeThree);
-        break;
-      case 4:
-        changeBrushPattern(brushSizeFour);
-        break;
-      case 5:
-        changeBrushPattern(brushSizeFive);
-        break;
-      default:
-        changeBrushPattern(brushSizeOne);
-        break;
-    }
-  }, [brushSize, changeBrushPattern]);
-
-  useEffect(() => {
-    const dataChangeListener: CanvasDataChangeHandler = ({ data }) => {
-      if (data.size === 0) {
-        return;
-      }
-      const allRowKeys = Array.from(data.keys());
-      const allColumnKeys = Array.from(data.get(allRowKeys[0])!.keys());
-      const currentTopIndex = Math.min(...allRowKeys);
-      const currentLeftIndex = Math.min(...allColumnKeys);
-      const currentBottomIndex = Math.max(...allRowKeys);
-      const currentRightIndex = Math.max(...allColumnKeys);
-      const tempArray = [];
-      for (let i = currentTopIndex; i <= currentBottomIndex; i++) {
-        const row = [];
-        for (let j = currentLeftIndex; j <= currentRightIndex; j++) {
-          const pixel = data.get(i)?.get(j);
-          if (pixel) {
-            row.push({
-              rowIndex: i,
-              columnIndex: j,
-              color: pixel.color,
-            });
-          }
-        }
-        tempArray.push(row);
-      }
-      setInitialPixelDataArray(tempArray);
-    };
-    addDataChangeListener(dataChangeListener);
-  }, [isPixelCanvasOpen, addDataChangeListener]);
-
-  useEffect(() => {
-    const strokeEndListener: CanvasStrokeEndHandler = ({
-      strokedPixels,
-      strokeTool,
-    }) => {
-      if (strokeTool === BrushTool.DOT) {
-        const color = strokedPixels[strokedPixels.length - 1].color;
-        setRecentlyUsedColors(prev => {
-          const newSet = new Set(prev);
-          newSet.add(color);
-          return newSet;
-        });
-      }
-    };
-    addStrokeEndListener(strokeEndListener);
-  }, [isPixelCanvasOpen, addStrokeEndListener]);
-
-  useEffect(() => {
-    if (recentlyUsedColors.size > 6) {
-      const newSet = new Set(recentlyUsedColors);
-      newSet.delete(Array.from(recentlyUsedColors)[0]);
-      setRecentlyUsedColors(newSet);
-    }
-  }, [recentlyUsedColors]);
-
-  useEffect(() => {
-    const brushToolListener: CanvasBrushChangeHandler = ({ brushTool }) => {
-      setBrushTool(brushTool);
-    };
-    addBrushChangeListener(brushToolListener);
-  }, [isPixelCanvasOpen, addBrushChangeListener, setBrushTool]);
-
-  useEffect(() => {
-    if (!isPixelCanvasOpen) {
-      setBrushTool(prev => {
-        if (prev !== BrushTool.DOT) {
-          return BrushTool.DOT;
-        }
-        return prev;
-      });
-    }
-  }, [isPixelCanvasOpen, setBrushTool]);
-
-  useEffect(() => {
-    changeBrushColor(finalValue.toString("hex"));
-  }, [finalValue, changeBrushColor]);
 
   return (
     <main className={`flex min-h-screen flex-col p-24 ${inter.className}`}>
@@ -241,7 +131,7 @@ export default function Home() {
               alignSelf={"end"}
               onPress={() => {
                 setIsModelActive(true);
-                if (!isPixelCanvasOpen) {
+                if (!isAssistiveCanvasOpen) {
                   generateImages();
                 } else {
                   if (initialPixelDataArray) {
@@ -263,7 +153,7 @@ export default function Home() {
                     generateImages();
                   }
                 }
-                setIsPixelCanvasOpen(false);
+                setIsAssistiveCanvasOpen(false);
               }}
             >
               {isModelActive ? (
@@ -279,11 +169,11 @@ export default function Home() {
           </Flex>
           <div
             className="z-50"
-            onClick={() => setIsPixelCanvasOpen(!isPixelCanvasOpen)}
+            onClick={() => setIsAssistiveCanvasOpen(!isAssistiveCanvasOpen)}
           >
             <Checkbox
-              isSelected={isPixelCanvasOpen}
-              onChange={setIsPixelCanvasOpen}
+              isSelected={isAssistiveCanvasOpen}
+              onChange={setIsAssistiveCanvasOpen}
             >
               <Text
                 UNSAFE_style={{
@@ -293,7 +183,7 @@ export default function Home() {
                 Generate Images with supplementary input images
               </Text>
             </Checkbox>
-            {isPixelCanvasOpen && (
+            {isAssistiveCanvasOpen && (
               <>
                 <Flex gap="size-100" UNSAFE_className="mb-1">
                   <ToggleButton
@@ -349,6 +239,16 @@ export default function Home() {
                     <PixelCanvas
                       initialData={initialPixelDataArray}
                       setInitialData={setInitialPixelDataArray}
+                    />
+                  )}
+                  {selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.BRUSH && (
+                    <BrushCanvas
+                      canvasWidth={initialBrushData?.canvasWidth}
+                      canvasHeight={initialBrushData?.canvasHeight}
+                      canvasLeftTopX={initialBrushData?.canvasLeftTopX}
+                      canvasLeftTopY={initialBrushData?.canvasLeftTopY}
+                      initData={initialBrushData?.data}
                     />
                   )}
                 </div>

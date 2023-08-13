@@ -28,6 +28,14 @@ import {
   InteractionExtensionAllowanceRatio,
 } from "@/utils/config";
 
+export type BrushDataElement = {
+  color: string;
+  points: Array<Coord>;
+  strokeWidth: number;
+};
+
+export type BrushData = Array<BrushDataElement>;
+
 export class Canvas extends EventDispatcher {
   private width: number = 0;
   private height: number = 0;
@@ -65,11 +73,7 @@ export class Canvas extends EventDispatcher {
     height: 0,
   };
   private currentBrushPoints: Array<Coord> | null = null;
-  private brushPoints: Array<{
-    color: string;
-    points: Array<Coord>;
-    strokeWidth: number;
-  }> = [];
+  private data: BrushData = [];
   private extensionPoint: {
     direction: ButtonDirection | null;
     offsetYAmount: number;
@@ -86,22 +90,23 @@ export class Canvas extends EventDispatcher {
   constructor(
     element: HTMLCanvasElement,
     backgroundElement: HTMLCanvasElement,
-    canvasWidth: number,
-    canvasHeight: number,
+    canvasWidth?: number,
+    canvasHeight?: number,
     canvasLeftTopX?: number,
     canvasLeftTopY?: number,
+    initData?: BrushData,
   ) {
     super();
     this.element = element;
     this.backgroundElement = backgroundElement;
 
     this.ctx = this.element.getContext("2d") as CanvasRenderingContext2D;
-
+    this.data = initData || [];
     this.canvasInfo = {
       lefTopX: canvasLeftTopX || 0,
       lefTopY: canvasLeftTopY || 0,
-      width: canvasWidth,
-      height: canvasHeight,
+      width: canvasWidth || 150,
+      height: canvasHeight || 150,
     };
     this.setPanZoom({
       offset: {
@@ -115,6 +120,7 @@ export class Canvas extends EventDispatcher {
           2,
       },
     });
+    this.render();
     this.initialize();
   }
 
@@ -539,7 +545,7 @@ export class Canvas extends EventDispatcher {
 
     if (isPointInsideCanvas) {
       const strokeDataPoint: Array<Coord> = [];
-      this.brushPoints.push({
+      this.data.push({
         color: this.brushColor,
         strokeWidth: this.strokeWidth,
         points: strokeDataPoint,
@@ -747,8 +753,8 @@ export class Canvas extends EventDispatcher {
 
     // brush
     this.ctx.save();
-    for (let i = 0; i < this.brushPoints.length; i++) {
-      const brushStroke = this.brushPoints[i];
+    for (let i = 0; i < this.data.length; i++) {
+      const brushStroke = this.data[i];
       this.ctx.beginPath();
       this.ctx.strokeStyle = brushStroke.color;
       this.ctx.lineWidth = brushStroke.strokeWidth * this.panZoom.scale;
