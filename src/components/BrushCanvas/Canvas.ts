@@ -37,7 +37,11 @@ import { BrushEraseAction } from "./BrushEraseAction";
 import { CanvasSizeChangeAction } from "./CanvasSizeChangeAction";
 import { BrushTool } from "dotting";
 import { createImageFromPartOfCanvas } from "@/utils/image";
-import { CanvasDataChangeParams, CanvasEvents } from "./event";
+import {
+  CanvasDataChangeParams,
+  CanvasEvents,
+  CanvasStrokeEndParams,
+} from "./event";
 
 export type BrushDataElement = {
   id: string;
@@ -158,6 +162,10 @@ export class Canvas extends EventDispatcher {
 
   emitDataChangeEvent(params: CanvasDataChangeParams) {
     this.emit(CanvasEvents.DATA_CHANGE, params);
+  }
+
+  emitStrokeEndEvent(params: CanvasStrokeEndParams) {
+    this.emit(CanvasEvents.STROKE_END, params);
   }
 
   emitCurrentDataChangeEvent() {
@@ -727,6 +735,10 @@ export class Canvas extends EventDispatcher {
           new BrushColorAction(recentDrawnStroke, this.data.length - 1),
         );
       }
+      this.emitStrokeEndEvent({
+        data: recentDrawnStroke,
+        brushColor: recentDrawnStroke.color,
+      });
     } else if (this.mouseMode === MouseMode.EXTENDING) {
       this.recordAction(
         new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),
@@ -765,6 +777,10 @@ export class Canvas extends EventDispatcher {
           new BrushColorAction(recentDrawnStroke, this.data.length - 1),
         );
       }
+      this.emitStrokeEndEvent({
+        data: recentDrawnStroke,
+        brushColor: recentDrawnStroke.color,
+      });
     } else if (this.mouseMode === MouseMode.EXTENDING) {
       this.recordAction(
         new CanvasSizeChangeAction(this.capturedCanvasInfo, this.canvasInfo),

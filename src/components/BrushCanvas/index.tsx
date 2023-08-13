@@ -22,6 +22,8 @@ import {
   CanvasDataChangeHandler,
   CanvasDataChangeParams,
   CanvasEvents,
+  CanvasStrokeEndHandler,
+  CanvasStrokeEndParams,
 } from "./event";
 
 export interface BrushCanvasProps {
@@ -74,6 +76,9 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   );
   const [canvasDataChangeListeners, setCanvasDataChangeListeners] = useState<
     CanvasDataChangeHandler[]
+  >([]);
+  const [strokeEndListeners, setStrokeEndListener] = useState<
+    CanvasStrokeEndHandler[]
   >([]);
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
@@ -142,6 +147,42 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     canvasDataChangeSetInitialDataListener,
   ]);
 
+  const addStrokeEndListener = useCallback(
+    (listener: CanvasStrokeEndHandler) => {
+      setStrokeEndListener(prev => [...prev, listener]);
+    },
+    [],
+  );
+
+  const removeStrokeEndListener = useCallback(
+    (listener: CanvasStrokeEndHandler) => {
+      setStrokeEndListener(prev => prev.filter(l => l !== listener));
+    },
+    [],
+  );
+
+  const strokeEndColorRecordListener = useCallback(
+    (params: CanvasStrokeEndParams) => {
+      setRecentlyUsedColors(prev => {
+        const newSet = new Set(prev);
+        newSet.add(params.brushColor);
+        return newSet;
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    addStrokeEndListener(strokeEndColorRecordListener);
+    return () => {
+      removeStrokeEndListener(strokeEndColorRecordListener);
+    };
+  }, [
+    addStrokeEndListener,
+    removeStrokeEndListener,
+    strokeEndColorRecordListener,
+  ]);
+
   useEffect(() => {
     if (!editor) {
       return;
@@ -156,6 +197,20 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
       });
     };
   }, [canvasDataChangeListeners, editor]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    strokeEndListeners.forEach(listener => {
+      editor.addEventListener(CanvasEvents.STROKE_END, listener);
+    });
+    return () => {
+      strokeEndListeners.forEach(listener => {
+        editor?.removeEventListener(CanvasEvents.STROKE_END, listener);
+      });
+    };
+  }, [strokeEndListeners, editor]);
 
   useEffect(() => {
     const onResize = () => {
