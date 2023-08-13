@@ -145,6 +145,9 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
           onMouseDown={() => {
             containerRef.current?.focus();
           }}
+          onKeyDown={e => {
+            editor?.onKeyDown(e);
+          }}
         >
           <canvas
             ref={gotBackgroundCanvasRef}

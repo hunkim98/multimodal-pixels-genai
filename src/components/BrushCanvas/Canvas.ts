@@ -415,14 +415,13 @@ export class Canvas extends EventDispatcher {
     this.render();
   }
 
-  handleKeyDown = (e: KeyboardEvent) => {
+  onKeyDown(e: any) {
     if (e.code === "KeyZ" && (e.ctrlKey || e.metaKey)) {
       this.undo();
-    }
-    if (e.code === "KeyY" && (e.ctrlKey || e.metaKey)) {
+    } else if (e.code === "KeyY" && (e.ctrlKey || e.metaKey)) {
       this.redo();
     }
-  };
+  }
 
   handleWheel = (e: WheelEvent) => {
     e.preventDefault();
@@ -679,10 +678,13 @@ export class Canvas extends EventDispatcher {
     evt.preventDefault();
     if (this.mouseMode === MouseMode.DRAWING) {
       console.log("mosue mode was drawing");
-      const recentDrawnStroke = this.data[this.data.length - 1];
-      if (recentDrawnStroke.points.length === 0) {
+      if (!this.currentBrushPoints) {
         return;
       }
+      if (this.currentBrushPoints.length === 0) {
+        return;
+      }
+      const recentDrawnStroke = this.data[this.data.length - 1];
       if (this.brushTool === PenTool.PEN) {
         this.recordAction(
           new BrushColorAction(recentDrawnStroke, this.data.length - 1),
@@ -713,15 +715,19 @@ export class Canvas extends EventDispatcher {
 
   onMouseOut(evt: TouchyEvent) {
     evt.preventDefault();
-    this.currentBrushPoints = null;
     if (this.mouseMode === MouseMode.DRAWING) {
+      console.log("mosue mode was drawing");
+      if (!this.currentBrushPoints) {
+        return;
+      }
+      if (this.currentBrushPoints.length === 0) {
+        return;
+      }
       const recentDrawnStroke = this.data[this.data.length - 1];
       if (this.brushTool === PenTool.PEN) {
-        if (recentDrawnStroke.points.length === 0) {
-          this.recordAction(
-            new BrushColorAction(recentDrawnStroke, this.data.length - 1),
-          );
-        }
+        this.recordAction(
+          new BrushColorAction(recentDrawnStroke, this.data.length - 1),
+        );
       } else {
         this.recordAction(
           new BrushColorAction(recentDrawnStroke, this.data.length - 1),
@@ -735,6 +741,7 @@ export class Canvas extends EventDispatcher {
     touchy(this.element, removeEvent, "mousemove", this.handlePanning);
     touchy(this.element, removeEvent, "mousemove", this.handlePinchZoom);
     touchy(this.element, removeEvent, "mousemove", this.handleExtension);
+    this.currentBrushPoints = null;
   }
 
   setPanZoom({
