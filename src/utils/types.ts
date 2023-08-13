@@ -105,8 +105,8 @@ export type CanvasHoverPixelChangeHandler = (
 ) => void;
 
 export type CanvasDataInfo = {
-  lefTopX: number;
-  lefTopY: number;
+  leftTopX: number;
+  leftTopY: number;
   width: number;
   height: number;
 };

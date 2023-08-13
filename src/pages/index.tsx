@@ -72,6 +72,9 @@ export default function Home() {
       axios
         .post("/api/replicate", { ...modelInputs, image: baseUrl })
         .then(res => {
+          if (typeof res.data === "string") {
+            return;
+          }
           const images = res.data as Array<string>;
           setGalleryImages(prev => [...prev, ...images]);
           setIsModelActive(false);
@@ -160,7 +163,7 @@ export default function Home() {
                     generateImages();
                   }
                 }
-                setIsAssistiveCanvasOpen(false);
+                // setIsAssistiveCanvasOpen(false);
               }}
             >
               {isModelActive ? (

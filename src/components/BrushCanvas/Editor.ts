@@ -79,14 +79,14 @@ export class Editor extends EventDispatcher {
   private undoHistory: Array<Action> = [];
   private redoHistory: Array<Action> = [];
   private canvasInfo: CanvasDataInfo = {
-    lefTopX: 0,
-    lefTopY: 0,
+    leftTopX: 0,
+    leftTopY: 0,
     width: 0,
     height: 0,
   };
   private capturedCanvasInfo: CanvasDataInfo = {
-    lefTopX: 0,
-    lefTopY: 0,
+    leftTopX: 0,
+    leftTopY: 0,
     width: 0,
     height: 0,
   };
@@ -129,21 +129,19 @@ export class Editor extends EventDispatcher {
     ) as CanvasRenderingContext2D;
     this.data = initData || [];
     this.canvasInfo = {
-      lefTopX: canvasLeftTopX || 0,
-      lefTopY: canvasLeftTopY || 0,
+      leftTopX: canvasLeftTopX || 0,
+      leftTopY: canvasLeftTopY || 0,
       width: canvasWidth || DefaultCanvasWidth,
       height: canvasHeight || DefaultCanvasHeight,
     };
     this.setPanZoom({
       offset: {
         x:
-          (this.panZoom.scale *
-            (-this.canvasInfo.width + this.canvasInfo.lefTopX)) /
-          2,
+          (this.panZoom.scale * -this.canvasInfo.width) / 2 -
+          this.canvasInfo.leftTopX,
         y:
-          (this.panZoom.scale *
-            (-this.canvasInfo.height + this.canvasInfo.lefTopY)) /
-          2,
+          (this.panZoom.scale * -this.canvasInfo.height) / 2 -
+          this.canvasInfo.leftTopY,
       },
     });
     this.render();
@@ -193,8 +191,8 @@ export class Editor extends EventDispatcher {
       data: this.data,
       canvasWidth: this.canvasInfo.width,
       canvasHeight: this.canvasInfo.height,
-      canvasLeftTopX: this.canvasInfo.lefTopX,
-      canvasLeftTopY: this.canvasInfo.lefTopY,
+      canvasLeftTopX: this.canvasInfo.leftTopX,
+      canvasLeftTopY: this.canvasInfo.leftTopY,
     });
   }
 
@@ -252,6 +250,10 @@ export class Editor extends EventDispatcher {
     return this.height;
   }
 
+  getDpr() {
+    return this.dpr;
+  }
+
   detectSelectedAreaExtendDirection(coord: Coord): ButtonDirection | null {
     const extensionAllowanceRatio = InteractionExtensionAllowanceRatio;
     const strokeTouchingRange = InteractionEdgeTouchingRange;
@@ -276,26 +278,26 @@ export class Editor extends EventDispatcher {
     // this.selectedArea,
     // );
     const top = {
-      x: this.canvasInfo.lefTopX,
-      y: this.canvasInfo.lefTopY,
+      x: this.canvasInfo.leftTopX,
+      y: this.canvasInfo.leftTopY,
       width: this.canvasInfo.width,
       height: this.canvasInfo.height,
     };
     const bottom = {
-      x: this.canvasInfo.lefTopX,
-      y: this.canvasInfo.lefTopY + this.canvasInfo.height,
+      x: this.canvasInfo.leftTopX,
+      y: this.canvasInfo.leftTopY + this.canvasInfo.height,
       width: this.canvasInfo.width,
       height: scaledYHeight,
     };
     const left = {
-      x: this.canvasInfo.lefTopX,
-      y: this.canvasInfo.lefTopY,
+      x: this.canvasInfo.leftTopX,
+      y: this.canvasInfo.leftTopY,
       width: scaledXWidth,
       height: this.canvasInfo.height,
     };
     const right = {
-      x: this.canvasInfo.lefTopX + this.canvasInfo.width,
-      y: this.canvasInfo.lefTopY,
+      x: this.canvasInfo.leftTopX + this.canvasInfo.width,
+      y: this.canvasInfo.leftTopY,
       width: scaledXWidth,
       height: this.canvasInfo.height,
     };
@@ -387,14 +389,14 @@ export class Editor extends EventDispatcher {
     const newWidth = this.capturedCanvasInfo.width + widthExtensionOffset;
     const newHeight = this.capturedCanvasInfo.height + heightExtensionOffset;
     if (direction === ButtonDirection.TOP) {
-      this.canvasInfo.lefTopY =
-        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
+      this.canvasInfo.leftTopY =
+        this.capturedCanvasInfo.leftTopY - heightExtensionOffset;
       this.setCanvasHeight(newHeight);
     } else if (direction === ButtonDirection.BOTTOM) {
       this.setCanvasHeight(newHeight);
     } else if (direction === ButtonDirection.LEFT) {
-      this.canvasInfo.lefTopX =
-        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.canvasInfo.leftTopX =
+        this.capturedCanvasInfo.leftTopX - widthExtensionOffset;
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.RIGHT) {
       this.setCanvasWidth(newWidth);
@@ -417,20 +419,20 @@ export class Editor extends EventDispatcher {
     const newWidth = this.capturedCanvasInfo.width + widthExtensionOffset;
     const newHeight = this.capturedCanvasInfo.height + heightExtensionOffset;
     if (direction === ButtonDirection.TOPLEFT) {
-      this.canvasInfo.lefTopY =
-        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
-      this.canvasInfo.lefTopX =
-        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.canvasInfo.leftTopY =
+        this.capturedCanvasInfo.leftTopY - heightExtensionOffset;
+      this.canvasInfo.leftTopX =
+        this.capturedCanvasInfo.leftTopX - widthExtensionOffset;
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.TOPRIGHT) {
-      this.canvasInfo.lefTopY =
-        this.capturedCanvasInfo.lefTopY - heightExtensionOffset;
+      this.canvasInfo.leftTopY =
+        this.capturedCanvasInfo.leftTopY - heightExtensionOffset;
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.BOTTOMLEFT) {
-      this.canvasInfo.lefTopX =
-        this.capturedCanvasInfo.lefTopX - widthExtensionOffset;
+      this.canvasInfo.leftTopX =
+        this.capturedCanvasInfo.leftTopX - widthExtensionOffset;
       this.setCanvasHeight(newHeight);
       this.setCanvasWidth(newWidth);
     } else if (direction === ButtonDirection.BOTTOMRIGHT) {
@@ -474,8 +476,8 @@ export class Editor extends EventDispatcher {
       data: this.data,
       canvasHeight: this.canvasInfo.height,
       canvasWidth: this.canvasInfo.width,
-      canvasLeftTopX: this.canvasInfo.lefTopX,
-      canvasLeftTopY: this.canvasInfo.lefTopY,
+      canvasLeftTopX: this.canvasInfo.leftTopX,
+      canvasLeftTopY: this.canvasInfo.leftTopY,
     });
     this.render();
   }
@@ -648,8 +650,8 @@ export class Editor extends EventDispatcher {
         offsetXAmount: 0,
       };
       this.capturedCanvasInfo = {
-        lefTopX: this.canvasInfo.lefTopX,
-        lefTopY: this.canvasInfo.lefTopY,
+        leftTopX: this.canvasInfo.leftTopX,
+        leftTopY: this.canvasInfo.leftTopY,
         width: this.canvasInfo.width,
         height: this.canvasInfo.height,
       };
@@ -664,12 +666,12 @@ export class Editor extends EventDispatcher {
 
     const isPointInsideCanvas = getIsPointInsideRegion(mouseCartCoord, {
       startWorldPos: {
-        x: this.canvasInfo.lefTopX,
-        y: this.canvasInfo.lefTopY,
+        x: this.canvasInfo.leftTopX,
+        y: this.canvasInfo.leftTopY,
       },
       endWorldPos: {
-        x: this.canvasInfo.lefTopX + this.canvasInfo.width,
-        y: this.canvasInfo.lefTopY + this.canvasInfo.height,
+        x: this.canvasInfo.leftTopX + this.canvasInfo.width,
+        y: this.canvasInfo.leftTopY + this.canvasInfo.height,
       },
     });
     if (isPointInsideCanvas) {
@@ -766,8 +768,8 @@ export class Editor extends EventDispatcher {
       data: this.data,
       canvasHeight: this.canvasInfo.height,
       canvasWidth: this.canvasInfo.width,
-      canvasLeftTopX: this.canvasInfo.lefTopX,
-      canvasLeftTopY: this.canvasInfo.lefTopY,
+      canvasLeftTopX: this.canvasInfo.leftTopX,
+      canvasLeftTopY: this.canvasInfo.leftTopY,
     });
   }
 
@@ -895,22 +897,22 @@ export class Editor extends EventDispatcher {
       const minXPosition = isCanvasWidthBiggerThanElement
         ? -this.canvasInfo.width * this.panZoom.scale -
           (this.width / 2) * this.panZoom.scale +
-          -this.canvasInfo.lefTopX * this.panZoom.scale
-        : -this.canvasInfo.lefTopX * this.panZoom.scale +
+          -this.canvasInfo.leftTopX * this.panZoom.scale
+        : -this.canvasInfo.leftTopX * this.panZoom.scale +
           (-this.width / 2) * this.panZoom.scale;
 
       const minYPosition = isCanvasHeightBiggerThanElement
         ? -this.canvasInfo.height * this.panZoom.scale -
           (this.height / 2) * this.panZoom.scale +
-          -this.canvasInfo.lefTopY * this.panZoom.scale
-        : -this.canvasInfo.lefTopY * this.panZoom.scale +
+          -this.canvasInfo.leftTopY * this.panZoom.scale
+        : -this.canvasInfo.leftTopY * this.panZoom.scale +
           (-this.height / 2) * this.panZoom.scale;
 
       const maxXPosition = isCanvasWidthBiggerThanElement
         ? this.width -
           (this.width / 2) * this.panZoom.scale +
-          -this.canvasInfo.lefTopX * this.panZoom.scale
-        : -this.canvasInfo.lefTopX * this.panZoom.scale +
+          -this.canvasInfo.leftTopX * this.panZoom.scale
+        : -this.canvasInfo.leftTopX * this.panZoom.scale +
           this.width -
           this.canvasInfo.width * this.panZoom.scale -
           (this.width / 2) * this.panZoom.scale;
@@ -918,8 +920,8 @@ export class Editor extends EventDispatcher {
       const maxYPosition = isCanvasHeightBiggerThanElement
         ? this.height -
           (this.height / 2) * this.panZoom.scale +
-          -this.canvasInfo.lefTopY * this.panZoom.scale
-        : -this.canvasInfo.lefTopY * this.panZoom.scale +
+          -this.canvasInfo.leftTopY * this.panZoom.scale
+        : -this.canvasInfo.leftTopY * this.panZoom.scale +
           this.height -
           this.canvasInfo.height * this.panZoom.scale -
           (this.height / 2) * this.panZoom.scale;
@@ -993,6 +995,10 @@ export class Editor extends EventDispatcher {
     return this.canvasInfo;
   }
 
+  getPanZoom() {
+    return this.panZoom;
+  }
+
   getData() {
     return this.data;
   }
@@ -1004,8 +1010,8 @@ export class Editor extends EventDispatcher {
   getImageBlob() {
     return createImageFromPartOfCanvas(
       this.dataCanvasElement,
-      this.canvasInfo.lefTopX,
-      this.canvasInfo.lefTopY,
+      this.canvasInfo.leftTopX,
+      this.canvasInfo.leftTopY,
       this.canvasInfo.width,
       this.canvasInfo.height,
     );
@@ -1021,7 +1027,7 @@ export class Editor extends EventDispatcher {
 
     const convertedLeftTopScreenPoint = convertCartesianToScreen(
       this.interactionCanvasElement,
-      { x: this.canvasInfo.lefTopX, y: this.canvasInfo.lefTopY },
+      { x: this.canvasInfo.leftTopX, y: this.canvasInfo.leftTopY },
       this.dpr,
     );
     const correctedLeftTopScreenPoint = getScreenPoint(

@@ -25,6 +25,8 @@ import {
   CanvasStrokeEndHandler,
   CanvasStrokeEndParams,
 } from "./event";
+import { createImageFromPartOfCanvas } from "@/utils/image";
+import { convertCartesianToScreen, getScreenPoint } from "@/utils/math";
 
 export interface BrushCanvasProps {
   canvasWidth?: number;
@@ -102,29 +104,55 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   }, []);
 
   const getImageBlob = useCallback(() => {
-    if (!editor) {
+    if (!editor || !dataCanvas) {
       return;
     }
-    const blob = editor?.getImageBlob();
-    props.setBrushCanvasImageBlob(blob);
     const tempCanvas = document.createElement("canvas");
     const canvasInfo = editor.getCanvasInfo();
-    tempCanvas.width = canvasInfo.width;
-    tempCanvas.height = canvasInfo.height;
-    const ctx = tempCanvas.getContext("2d");
-    if (!ctx) {
-      return;
-    }
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvasInfo.width, canvasInfo.height);
-    var img = new Image();
+    const panZoom = editor.getPanZoom();
+    const dpr = editor.getDpr();
+    const originalElementWidth = editor.getWidth();
+    const originalElementHeight = editor.getHeight();
+    const widthExtensionRatio = dataCanvas.width / originalElementWidth;
+    const heightExtensionRatio = dataCanvas.height / originalElementHeight;
+    const convertedLeftTopScreenPoint = convertCartesianToScreen(
+      dataCanvas,
+      { x: canvasInfo.leftTopX, y: canvasInfo.leftTopY },
+      dpr,
+    );
+    const correctedLeftTopScreenPoint = getScreenPoint(
+      convertedLeftTopScreenPoint,
+      panZoom,
+    );
+    const blob = createImageFromPartOfCanvas(
+      dataCanvas,
+      correctedLeftTopScreenPoint.x * widthExtensionRatio,
+      correctedLeftTopScreenPoint.y * heightExtensionRatio,
+      canvasInfo.width * panZoom.scale * widthExtensionRatio,
+      canvasInfo.height * panZoom.scale * heightExtensionRatio,
+    );
+    props.setBrushCanvasImageBlob(blob);
+    // tempCanvas.width = canvasInfo.width;
+    // tempCanvas.height = canvasInfo.height;
+    // const ctx = tempCanvas.getContext("2d");
+    // if (!ctx) {
+    //   return;
+    // }
+    // ctx.fillStyle = "#ffffff";
+    // ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    // var img = new Image();
 
-    img.onload = function () {
-      ctx.drawImage(img, 0, 0);
-    };
+    // img.onload = function () {
+    //   const width = img.width;
+    //   const height = img.height;
+    //   const ratio = width / height;
+    //   const newWidth = tempCanvas.width;
+    //   const newHeight = newWidth / ratio;
+    //   ctx.drawImage(img, 0, 0, width, height, 0, 0, newWidth, newHeight);
+    // };
 
-    img.src = URL.createObjectURL(blob);
-    document.body.appendChild(tempCanvas);
+    // img.src = URL.createObjectURL(blob);
+    // document.body.appendChild(tempCanvas);
   }, [editor, props.setBrushCanvasImageBlob]);
 
   const addCanvasDataChangeListener = useCallback(
