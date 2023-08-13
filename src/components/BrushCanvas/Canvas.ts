@@ -36,6 +36,8 @@ import { getNewGUIDString } from "@/utils/guid";
 import { BrushEraseAction } from "./BrushEraseAction";
 import { CanvasSizeChangeAction } from "./CanvasSizeChangeAction";
 import { BrushTool } from "dotting";
+import { createImageFromPartOfCanvas } from "@/utils/image";
+import { CanvasDataChangeParams, CanvasEvents } from "./event";
 
 export type BrushDataElement = {
   id: string;
@@ -152,6 +154,20 @@ export class Canvas extends EventDispatcher {
     touchy(this.element, addEvent, "mouseout", this.onMouseOut);
     touchy(this.element, addEvent, "mousemove", this.onMouseMove);
     this.element.addEventListener("wheel", this.handleWheel);
+  }
+
+  emitDataChangeEvent(params: CanvasDataChangeParams) {
+    this.emit(CanvasEvents.DATA_CHANGE, params);
+  }
+
+  emitCurrentDataChangeEvent() {
+    this.emitDataChangeEvent({
+      data: this.data,
+      canvasWidth: this.canvasInfo.width,
+      canvasHeight: this.canvasInfo.height,
+      canvasLeftTopX: this.canvasInfo.lefTopX,
+      canvasLeftTopY: this.canvasInfo.lefTopY,
+    });
   }
 
   scale(x: number, y: number) {
@@ -414,6 +430,13 @@ export class Canvas extends EventDispatcher {
         this.canvasInfo = canvasSizeChangeAction.getNewCanvasInfo();
         break;
     }
+    this.emitDataChangeEvent({
+      data: this.data,
+      canvasHeight: this.canvasInfo.height,
+      canvasWidth: this.canvasInfo.width,
+      canvasLeftTopX: this.canvasInfo.lefTopX,
+      canvasLeftTopY: this.canvasInfo.lefTopY,
+    });
     this.render();
   }
 
@@ -676,6 +699,13 @@ export class Canvas extends EventDispatcher {
   recordAction(action: Action) {
     this.undoHistory.push(action);
     this.redoHistory = [];
+    this.emitDataChangeEvent({
+      data: this.data,
+      canvasHeight: this.canvasInfo.height,
+      canvasWidth: this.canvasInfo.width,
+      canvasLeftTopX: this.canvasInfo.lefTopX,
+      canvasLeftTopY: this.canvasInfo.lefTopY,
+    });
   }
 
   onMouseUp(evt: TouchyEvent) {
@@ -827,6 +857,20 @@ export class Canvas extends EventDispatcher {
 
   getData() {
     return this.data;
+  }
+
+  getCanvasElement() {
+    return this.element;
+  }
+
+  getImageBlob() {
+    return createImageFromPartOfCanvas(
+      this.element,
+      this.canvasInfo.lefTopX,
+      this.canvasInfo.lefTopY,
+      this.canvasInfo.width,
+      this.canvasInfo.height,
+    );
   }
 
   render() {

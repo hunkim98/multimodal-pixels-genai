@@ -18,6 +18,11 @@ import DeleteIcon from "@spectrum-icons/workflow/Delete";
 import UndoIcon from "@spectrum-icons/workflow/Undo";
 import RedoIcon from "@spectrum-icons/workflow/Redo";
 import { ColorWheel } from "@react-spectrum/color";
+import {
+  CanvasDataChangeHandler,
+  CanvasDataChangeParams,
+  CanvasEvents,
+} from "./event";
 
 export interface BrushCanvasProps {
   canvasWidth?: number;
@@ -37,6 +42,9 @@ export interface BrushCanvasProps {
       | undefined
     >
   >;
+  setBrushCanvasImageBlob: React.Dispatch<
+    React.SetStateAction<Blob | undefined>
+  >;
   style?: React.CSSProperties;
 }
 
@@ -51,7 +59,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   const [brushColor, setBrushColor] = useState<string>("#ff0000");
   const [strokeWidth, setStrokeWidth] = useState<number>(3);
   const [brushTool, setBrushTool] = useState<PenTool>(PenTool.PEN);
-  const gotInteractionCanvasRef = useCallback((element: HTMLCanvasElement) => {
+  const gotDataCanvasRef = useCallback((element: HTMLCanvasElement) => {
     if (!element) {
       return;
     }
@@ -64,6 +72,9 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   const [finalSelectedColor, setFinalSelectedColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
+  const [canvasDataChangeListeners, setCanvasDataChangeListeners] = useState<
+    CanvasDataChangeHandler[]
+  >([]);
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
@@ -75,6 +86,76 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
     element.style["touchAction"] = "none";
     setBackgroundCanvas(element);
   }, []);
+
+  const gotInteractionCanvasRef = useCallback((element: HTMLCanvasElement) => {
+    if (!element) {
+      return;
+    }
+    element.style["touchAction"] = "none";
+    setInteractionCanvas(element);
+  }, []);
+
+  const getImageBlob = useCallback(() => {
+    if (!editor) {
+      return;
+    }
+    const blob = editor?.getImageBlob();
+    props.setBrushCanvasImageBlob(blob);
+  }, [editor, props.setBrushCanvasImageBlob]);
+
+  const addCanvasDataChangeListener = useCallback(
+    (listener: CanvasDataChangeHandler) => {
+      setCanvasDataChangeListeners(prev => [...prev, listener]);
+    },
+    [],
+  );
+
+  const removeCanvasDataChangeListener = useCallback(
+    (listener: CanvasDataChangeHandler) => {
+      setCanvasDataChangeListeners(prev => prev.filter(l => l !== listener));
+    },
+    [],
+  );
+
+  const canvasDataChangeSetInitialDataListener = useCallback(
+    (params: CanvasDataChangeParams) => {
+      getImageBlob();
+      props.setInitialBrushData({
+        canvasHeight: params.canvasHeight,
+        canvasWidth: params.canvasWidth,
+        canvasLeftTopX: params.canvasLeftTopX,
+        canvasLeftTopY: params.canvasLeftTopY,
+        data: params.data,
+      });
+    },
+    [props.setInitialBrushData, getImageBlob],
+  );
+
+  useEffect(() => {
+    addCanvasDataChangeListener(canvasDataChangeSetInitialDataListener);
+    return () => {
+      removeCanvasDataChangeListener(canvasDataChangeSetInitialDataListener);
+    };
+  }, [
+    addCanvasDataChangeListener,
+    removeCanvasDataChangeListener,
+    canvasDataChangeSetInitialDataListener,
+  ]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+    canvasDataChangeListeners.forEach(listener => {
+      editor.addEventListener(CanvasEvents.DATA_CHANGE, listener);
+    });
+    editor.emitCurrentDataChangeEvent();
+    return () => {
+      canvasDataChangeListeners.forEach(listener => {
+        editor?.removeEventListener(CanvasEvents.DATA_CHANGE, listener);
+      });
+    };
+  }, [canvasDataChangeListeners, editor]);
 
   useEffect(() => {
     const onResize = () => {
@@ -194,10 +275,17 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
             }}
           />
           <canvas
-            ref={gotInteractionCanvasRef}
+            ref={gotDataCanvasRef}
             style={{
               position: "absolute",
 
+              ...props.style,
+            }}
+          />
+          <canvas
+            ref={gotInteractionCanvasRef}
+            style={{
+              position: "absolute",
               ...props.style,
             }}
           />

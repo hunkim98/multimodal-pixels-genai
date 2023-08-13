@@ -50,6 +50,7 @@ export default function Home() {
     canvasLeftTopY: number;
     data: BrushData;
   }>();
+  const [brushCanvasImageBlob, setBrushCanvasImageBlob] = useState<Blob>();
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
@@ -67,9 +68,9 @@ export default function Home() {
     image: undefined,
   });
   const generateImages = useCallback(
-    (imageUrl?: string) => {
+    (baseUrl?: string) => {
       axios
-        .post("/api/replicate", { ...modelInputs, image: imageUrl })
+        .post("/api/replicate", { ...modelInputs, image: baseUrl })
         .then(res => {
           const images = res.data as Array<string>;
           setGalleryImages(prev => [...prev, ...images]);
@@ -108,21 +109,32 @@ export default function Home() {
                 if (!isAssistiveCanvasOpen) {
                   generateImages();
                 } else {
-                  if (initialPixelDataArray) {
-                    blobToBase64(
-                      createImageOutOfNestedColorArray(initialPixelDataArray),
-                    )
+                  if (
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PIXELS
+                  ) {
+                    if (initialPixelDataArray) {
+                      blobToBase64(
+                        createImageOutOfNestedColorArray(initialPixelDataArray),
+                      )
+                        .then(base64String => {
+                          generateImages(base64String as string);
+                        })
+                        .catch(err => {
+                          setIsModelActive(false);
+                        });
+                    } else {
+                      generateImages();
+                    }
+                  }
+                  if (brushCanvasImageBlob) {
+                    blobToBase64(brushCanvasImageBlob)
                       .then(base64String => {
                         generateImages(base64String as string);
                       })
                       .catch(err => {
                         setIsModelActive(false);
                       });
-                    // imageFileUpload(
-                    //   createImageOutOfNestedColorArray(userDataArray)
-                    // ).then((url) => {
-                    //   generateImages(url);
-                    // });
                   } else {
                     generateImages();
                   }
@@ -224,6 +236,7 @@ export default function Home() {
                       canvasLeftTopY={initialBrushData?.canvasLeftTopY}
                       initData={initialBrushData?.data}
                       setInitialBrushData={setInitialBrushData}
+                      setBrushCanvasImageBlob={setBrushCanvasImageBlob}
                     />
                   )}
                 </div>

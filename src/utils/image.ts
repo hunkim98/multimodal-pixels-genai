@@ -3,7 +3,7 @@ import { PixelModifyItem } from "dotting";
 const GRID_SQUARE_LENGTH = 20;
 
 export const createImageOutOfNestedColorArray = (
-  nestedColorArray: PixelModifyItem[][]
+  nestedColorArray: PixelModifyItem[][],
 ) => {
   const imageCanvas = document.createElement("canvas");
   const rowCount = nestedColorArray.length;
@@ -23,13 +23,42 @@ export const createImageOutOfNestedColorArray = (
         pixelCoord.x,
         pixelCoord.y,
         GRID_SQUARE_LENGTH,
-        GRID_SQUARE_LENGTH
+        GRID_SQUARE_LENGTH,
       );
       imageContext.restore();
     }
   }
   imageContext.save();
-  const dataURL = imageCanvas.toDataURL("image/png");
+  return makeCanvasToImageBlob(imageCanvas);
+};
+
+export const createImageFromPartOfCanvas = (
+  canvas: HTMLCanvasElement,
+  offsetX: number,
+  offsetY: number,
+  width: number,
+  height: number,
+) => {
+  const imageCanvas = document.createElement("canvas");
+  const tempContext = imageCanvas.getContext("2d")!;
+  imageCanvas.width = width;
+  imageCanvas.height = height;
+  tempContext.drawImage(
+    canvas,
+    offsetX,
+    offsetY,
+    width,
+    height,
+    0,
+    0,
+    width,
+    height,
+  );
+  return makeCanvasToImageBlob(imageCanvas);
+};
+
+export const makeCanvasToImageBlob = (canvas: HTMLCanvasElement) => {
+  const dataURL = canvas.toDataURL("image/png");
   const blobBin = atob(dataURL.split(",")[1]);
   const array = [];
   for (var i = 0; i < blobBin.length; i++) {
@@ -42,7 +71,7 @@ export const createImageOutOfNestedColorArray = (
 export const blobToBase64 = (blob: Blob) => {
   const reader = new FileReader();
   reader.readAsDataURL(blob);
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     reader.onloadend = () => {
       resolve(reader.result);
     };
