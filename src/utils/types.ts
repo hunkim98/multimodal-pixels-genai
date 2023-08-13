@@ -43,7 +43,7 @@ export enum CanvasEvents {
   HOVER_PIXEL_CHANGE = "hoverPixelChange",
 }
 
-export enum PenTool {
+export enum SketchTool {
   PEN = "PEN",
   ERASER = "ERASER",
   NONE = "NONE",
@@ -88,7 +88,7 @@ export type CanvasGridChangeHandler = (params: CanvasGridChangeParams) => void;
 export type CanvasStrokeEndParams = {
   strokedPixels: Array<ColorChangeItem>;
   data: DottingData;
-  strokeTool: PenTool;
+  strokeTool: SketchTool;
 };
 
 export type CanvasStrokeEndHandler = (params: CanvasStrokeEndParams) => void;

@@ -28,7 +28,7 @@ import {
 import { createImageFromPartOfCanvas } from "@/utils/image";
 import { convertCartesianToScreen, getScreenPoint } from "@/utils/math";
 
-export interface BrushCanvasProps {
+export interface SketchCanvasProps {
   canvasWidth?: number;
   canvasHeight?: number;
   canvasLeftTopX?: number;
@@ -52,7 +52,7 @@ export interface BrushCanvasProps {
   style?: React.CSSProperties;
 }
 
-const BrushCanvas: React.FC<BrushCanvasProps> = props => {
+const SketchCanvas: React.FC<SketchCanvasProps> = props => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -500,4 +500,4 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
   );
 };
 
-export default BrushCanvas;
+export default SketchCanvas;
