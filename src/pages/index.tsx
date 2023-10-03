@@ -65,7 +65,7 @@ export default function Home() {
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
-    useState<AssistiveImageInputType>(AssistiveImageInputType.BRUSH);
+    useState<AssistiveImageInputType>(AssistiveImageInputType.SHAPE);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
@@ -225,7 +225,7 @@ export default function Home() {
                       );
                     }}
                   >
-                    Outline Sketch
+                    Shape Tool
                   </ToggleButton>
                   <ToggleButton
                     isSelected={
