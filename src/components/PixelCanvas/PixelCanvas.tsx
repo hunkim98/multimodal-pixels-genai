@@ -152,7 +152,6 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
           width={350}
           height={350}
           isGridVisible={isGridVisible}
-          initData={initialData}
           style={{
             border: "none",
           }}

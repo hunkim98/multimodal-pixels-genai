@@ -17,9 +17,11 @@
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.14",
     "axios": "^1.4.0",
-    "dotting": "^1.1.7",
+    "canvas": "^2.11.2",
+    "dotting": "^2.0.13",
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.13",
+    "fabric": "^5.3.0",
     "next": "13.4.13",
     "postcss": "8.4.27",
     "react": "18.2.0",
@@ -30,6 +32,7 @@
     "typescript": "5.1.6"
   },
   "devDependencies": {
-    "@types/aws-sdk": "^2.7.0"
+    "@types/aws-sdk": "^2.7.0",
+    "@types/fabric": "^5.3.4"
   }
 }

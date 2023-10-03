@@ -31,13 +31,15 @@ import BrushCanvas from "@/components/BrushCanvas";
 import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
 import { BrushData } from "@/components/BrushCanvas/Editor";
 import SketchCanvas from "@/components/SketchCanvas";
+import ShapeCanvas from "@/components/ShapeCanvas";
 
 const inter = Inter({ subsets: ["latin"] });
 
 enum AssistiveImageInputType {
-  SKETCH = "sketch",
   BRUSH = "brush",
   PIXELS = "pixels",
+  SHAPE = "shape",
+  PEN = "PEN",
 }
 
 export default function Home() {
@@ -63,7 +65,7 @@ export default function Home() {
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
-    useState<AssistiveImageInputType>(AssistiveImageInputType.SKETCH);
+    useState<AssistiveImageInputType>(AssistiveImageInputType.BRUSH);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
@@ -174,21 +176,6 @@ export default function Home() {
                       return;
                     }
                   }
-                  if (
-                    selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.SKETCH
-                  ) {
-                    if (sketchCanvasImageBlob) {
-                      blobToBase64(sketchCanvasImageBlob)
-                        .then(base64String => {
-                          generateImages(base64String as string);
-                        })
-                        .catch(err => {
-                          setIsModelActive(false);
-                        });
-                      return;
-                    }
-                  }
                   generateImages();
                 }
                 // setIsAssistiveCanvasOpen(false);
@@ -227,14 +214,14 @@ export default function Home() {
                   <ToggleButton
                     isSelected={
                       selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.SKETCH
+                      AssistiveImageInputType.SHAPE
                     }
                     UNSAFE_style={{
                       fontWeight: "bold",
                     }}
                     onPressChange={() => {
                       setSelectedAssistiveImageInputType(
-                        AssistiveImageInputType.SKETCH,
+                        AssistiveImageInputType.SHAPE,
                       );
                     }}
                   >
@@ -297,17 +284,7 @@ export default function Home() {
                     />
                   )}
                   {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.SKETCH && (
-                    <SketchCanvas
-                      canvasWidth={initialSketchData?.canvasWidth}
-                      canvasHeight={initialSketchData?.canvasHeight}
-                      canvasLeftTopX={initialSketchData?.canvasLeftTopX}
-                      canvasLeftTopY={initialSketchData?.canvasLeftTopY}
-                      initData={initialSketchData?.data}
-                      setInitialSketchData={setInitialSketchData}
-                      setSketchCanvasImageBlob={setSketchCanvasImageBlob}
-                    />
-                  )}
+                    AssistiveImageInputType.SHAPE && <ShapeCanvas />}
                 </div>
               </>
             )}
