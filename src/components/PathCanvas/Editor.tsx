@@ -17,18 +17,15 @@ function Editor({ shapeType }: Props) {
       canvasRef.current?.setAttribute("width", "320");
       canvasRef.current?.setAttribute("height", "320");
       fabricRef.current = new fabric.Canvas(canvasRef.current);
-      fabricRef.current.isDrawingMode = false;
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      console.log("hey!");
-      if (event.key === "Backspace" || event.key === "Delete") {
-        const activeObject = fabricRef.current?.getActiveObject();
-        console.log(activeObject);
-        if (activeObject) {
-          fabricRef.current?.remove(activeObject);
-        }
-      }
+      fabricRef.current.on("mouse:up", () => {
+        console.log("object:added");
+      });
+      fabricRef.current.on("object:removed", () => {
+        console.log("object:removed");
+      });
+      fabricRef.current.on("object:modified", () => {
+        console.log("object:modified");
+      });
     };
 
     // const addRectangle = () => {
@@ -48,13 +45,10 @@ function Editor({ shapeType }: Props) {
     };
 
     initFabric();
-    document.addEventListener("keydown", onKeyDown);
-
     // addRectangle();
 
     return () => {
       disposeFabric();
-      document.removeEventListener("keydown", onKeyDown);
     };
   }, []);
 
@@ -62,9 +56,6 @@ function Editor({ shapeType }: Props) {
     if (!fabricRef.current) return;
     const onMouseDownHandler = (event: fabric.IEvent) => {
       if (!shapeType) return;
-      if (event.target) {
-        return; // if we have clicked on an existing shape, don't create a new one
-      }
       const { offsetX, offsetY } = event.e as MouseEvent;
       const { top, left } = currentShape.current?.getBoundingRect() || {
         top: 0,
@@ -74,7 +65,6 @@ function Editor({ shapeType }: Props) {
       allObjects.forEach(object => {
         object.selectable = false;
       });
-
       if (shapeType === "rect") {
         const rect = new fabric.Rect({
           top: offsetY - top,
@@ -109,6 +99,8 @@ function Editor({ shapeType }: Props) {
     const onMouseMoveHandler = (event: fabric.IEvent) => {
       if (!shapeType) return;
       // we could already be clicking a shape
+      const activeShape = fabricRef.current?.getActiveObject();
+      if (activeShape) return;
       const { offsetX, offsetY } = event.e as MouseEvent;
       const { top, left } = currentShape.current?.getBoundingRect() || {
         top: 0,
@@ -149,20 +141,20 @@ function Editor({ shapeType }: Props) {
     const onMouseUpHandler = (event: fabric.IEvent) => {
       if (!currentShape.current) return;
       if (
-        (currentShape.current.width !== undefined &&
-          Math.abs(currentShape.current.width) <= 3) ||
-        (currentShape.current.height !== undefined &&
-          Math.abs(currentShape.current.height) <= 3)
+        (currentShape.current.width &&
+          Math.abs(currentShape.current.width) < 1) ||
+        (currentShape.current.height &&
+          Math.abs(currentShape.current.height) < 1)
       ) {
-        console.log("removing object!", currentShape.current);
         fabricRef.current?.remove(currentShape.current);
-      }
 
+        return;
+      }
       const allObjects = fabricRef.current!.getObjects();
       allObjects.forEach(object => {
         object.selectable = true;
       });
-
+      const json = JSON.stringify(fabricRef.current?.toJSON());
       currentShape.current = undefined;
     };
 
