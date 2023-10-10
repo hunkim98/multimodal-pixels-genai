@@ -12,6 +12,7 @@
     "@adobe/react-spectrum": "^3.28.0",
     "@react-spectrum/color": "^3.0.0-beta.23",
     "@spectrum-icons/workflow": "^4.2.2",
+    "@svgedit/svgcanvas": "^7.2.1",
     "@types/node": "20.4.8",
     "@types/react": "18.2.18",
     "@types/react-dom": "18.2.7",

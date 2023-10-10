@@ -32,6 +32,15 @@ import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
 import { BrushData } from "@/components/BrushCanvas/Editor";
 import SketchCanvas from "@/components/SketchCanvas";
 import ShapeCanvas from "@/components/ShapeCanvas";
+import PathCanvas from "@/components/PathCanvas";
+import dynamic from "next/dynamic";
+
+const DynamicComponentWithNoSSR = dynamic(
+  () => import("../components/PathCanvas/Editor"),
+  {
+    ssr: false,
+  },
+);
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,7 +48,7 @@ enum AssistiveImageInputType {
   BRUSH = "brush",
   PIXELS = "pixels",
   SHAPE = "shape",
-  PEN = "PEN",
+  PATH = "PATH",
 }
 
 export default function Home() {
@@ -259,6 +268,22 @@ export default function Home() {
                   >
                     Pixel Squares
                   </ToggleButton>
+                  <ToggleButton
+                    isSelected={
+                      selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.PATH
+                    }
+                    UNSAFE_style={{
+                      fontWeight: "bold",
+                    }}
+                    onPressChange={() => {
+                      setSelectedAssistiveImageInputType(
+                        AssistiveImageInputType.PATH,
+                      );
+                    }}
+                  >
+                    Path Tool
+                  </ToggleButton>
                 </Flex>
                 <div
                   className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
@@ -285,6 +310,8 @@ export default function Home() {
                   )}
                   {selectedAsssistivImageInputType ===
                     AssistiveImageInputType.SHAPE && <ShapeCanvas />}
+                  {/* {selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PATH && <PathCanvas />} */}
                 </div>
               </>
             )}
@@ -293,6 +320,9 @@ export default function Home() {
       </div>
       <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">
         <Text UNSAFE_className="text-lg font-bold">Generated Images</Text>
+        <div style={{ width: "100%", height: "100%" }}>
+          <DynamicComponentWithNoSSR />
+        </div>
         <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
           {galleryImage.map(image => (
             <Image

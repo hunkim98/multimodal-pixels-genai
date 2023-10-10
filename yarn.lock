@@ -2425,6 +2425,11 @@
     "@react-spectrum/icon" "^3.7.3"
     "@swc/helpers" "^0.5.0"
 
+"@svgedit/svgcanvas@^7.2.1":
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/@svgedit/svgcanvas/-/svgcanvas-7.2.1.tgz#4764e8b5f8c366a83be282dfca6d8413b6ede4a7"
+  integrity sha512-OAHtkjfb8m29QjeSlH0I8xskEXUwAub7w+k+NgMLtDgJibDJ+Mbh/Q0KxnMUnxh02Ij2u6YJGQKZ3IaMggV02w==
+
 "@swc/helpers@0.5.1", "@swc/helpers@^0.5.0":
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.5.1.tgz#e9031491aa3f26bfcc974a67f48bd456c8a5357a"
