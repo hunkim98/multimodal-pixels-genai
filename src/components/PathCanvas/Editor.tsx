@@ -1,4 +1,4 @@
-import Editor from "@svgedit/svgcanvas";
+import SvgCanvas from "@svgedit/svgcanvas";
 import React, { useEffect, useLayoutEffect } from "react";
 import config from "./config";
 import { CanvasContextProvider, canvasContext } from "./canvasContext";
@@ -22,10 +22,17 @@ const Canvas = () => {
     }
   };
 
+  const onKeyDown = (event: any) => {
+    if (event.key === "Backspace" && event.target.tagName !== "INPUT") {
+      event.preventDefault();
+      dispatchCanvasState({ type: "deleteSelectedElements" });
+    }
+  };
+
   useLayoutEffect(() => {
     const editorDom = svgcanvasRef.current;
     // Promise.resolve().then(() => {
-    const canvas = new Editor(editorDom, config);
+    const canvas = new SvgCanvas(editorDom, config);
     updateCanvas(canvas, svgcanvasRef.current, config, true);
     console.log(canvas);
     dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
@@ -37,11 +44,23 @@ const Canvas = () => {
     //   });
     //   svgEditor.init();
     // });
+    document.addEventListener("keydown", onKeyDown.bind(canvas));
+    return () => {
+      // cleanup function
+      console.log("cleanup");
+      document.removeEventListener("keydown", onKeyDown.bind(canvas));
+    };
   }, []);
   updateContextPanel();
   return (
     <div className="OIe-editor" role="main">
-      <div className="workarea">
+      <div
+        className="workarea"
+        style={{
+          width: "320px",
+          height: "320px",
+        }}
+      >
         <div
           ref={svgcanvasRef}
           className="svgcanvas"

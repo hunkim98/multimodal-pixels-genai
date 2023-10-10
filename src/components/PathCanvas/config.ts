@@ -2,7 +2,7 @@ const config = {
   canvasName: "default",
   // The minimum area visible outside the canvas, as a multiple of the image dimensions.
   // The larger the number, the more one can scroll outside the canvas.
-  canvas_expansion: 1.5,
+  canvas_expansion: 1,
   initFill: {
     color: "FF0000", // solid red
     opacity: 1,
@@ -35,7 +35,7 @@ const config = {
   extIconsPath: "extensions/",
   // DOCUMENT PROPERTIES
   // Change the following to a preference (already in the Document Properties dialog)?
-  dimensions: [640, 480],
+  dimensions: [320, 320],
   // EDITOR OPTIONS
   // Change the following to preferences (already in the Editor Options dialog)?
   gridSnapping: false,
