@@ -285,8 +285,8 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
       dataCanvas,
       backgroundCanvas,
       interactionCanvas,
-      350,
-      350,
+      320,
+      320,
       props.canvasWidth,
       props.canvasHeight,
       props.canvasLeftTopX,
@@ -352,11 +352,11 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
 
   return (
     <Flex direction="row" gap="size-100">
-      <div className="bg-white">
+      <div className="bg-white border border-black">
         <div
           style={{
-            width: 350,
-            height: 350,
+            width: 320,
+            height: 320,
             position: "relative",
             outline: "none",
           }}
@@ -396,7 +396,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
           />
         </div>
       </div>
-      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
+      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
         <Flex
           justifyContent={"space-between"}
           alignItems={"center"}

@@ -35,6 +35,7 @@ import DeleteIcon from "@spectrum-icons/workflow/Delete";
 import UndoIcon from "@spectrum-icons/workflow/Undo";
 import RedoIcon from "@spectrum-icons/workflow/Redo";
 import { ColorWheel } from "@react-spectrum/color";
+import { CreateEmptySquareData } from "@/utils/dataCreator";
 
 interface Props {
   initialData?: Array<Array<PixelModifyItem>>;
@@ -149,15 +150,24 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
       <div className="bg-white">
         <Dotting
           ref={dottingRef}
-          width={350}
-          height={350}
+          width={320}
+          height={320}
+          isGridFixed={true}
+          initLayers={[
+            {
+              id: "default",
+              data: CreateEmptySquareData(32),
+            },
+          ]}
+          gridSquareLength={10}
           isGridVisible={isGridVisible}
+          isPanZoomable={false}
           style={{
             border: "none",
           }}
         />
       </div>
-      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
+      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
         <Flex justifyContent={"space-between"} alignItems={"center"}>
           <Flex alignItems={"center"}>
             <Switch isSelected={isGridVisible} onChange={setIsGridVisible} />

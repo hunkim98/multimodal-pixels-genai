@@ -14,8 +14,8 @@ function Editor({ shapeType }: Props) {
 
   useEffect(() => {
     const initFabric = () => {
-      canvasRef.current?.setAttribute("width", "350");
-      canvasRef.current?.setAttribute("height", "350");
+      canvasRef.current?.setAttribute("width", "320");
+      canvasRef.current?.setAttribute("height", "320");
       fabricRef.current = new fabric.Canvas(canvasRef.current);
     };
 
