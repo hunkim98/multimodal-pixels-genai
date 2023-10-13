@@ -19,7 +19,7 @@ const config = {
   },
   initOpacity: 1,
   colorPickerCSS: null,
-  initTool: "select",
+  initTool: "line",
   exportWindowType: "new", // 'same' (todo: also support 'download')
   wireframe: false,
   showlayers: false,
@@ -42,7 +42,7 @@ const config = {
   gridColor: "#000",
   baseUnit: "px",
   snappingStep: 10,
-  showRulers: true,
+  showRulers: false,
   // EXTENSION-RELATED (GRID)
   showGrid: false, // Set by ext-grid.js
 };

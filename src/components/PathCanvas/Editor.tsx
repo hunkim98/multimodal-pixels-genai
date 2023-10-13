@@ -36,14 +36,7 @@ const Canvas = () => {
     updateCanvas(canvas, svgcanvasRef.current, config, true);
     console.log(canvas);
     dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
-    //   svgEditor.setConfig({
-    //     allowInitialUserOverride: false,
-    //     extensions: [],
-    //     noDefaultExtensions: true,
-    //     userExtensions: ["./react-test.js"],
-    //   });
-    //   svgEditor.init();
-    // });
+    dispatchCanvasState({ type: "mode", mode: "path" });
     document.addEventListener("keydown", onKeyDown.bind(canvas));
     return () => {
       // cleanup function
