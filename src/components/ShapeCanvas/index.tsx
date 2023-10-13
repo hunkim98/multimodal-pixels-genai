@@ -20,12 +20,13 @@ import SelectIcon from "@spectrum-icons/workflow/Select";
 import CircleIcon from "@spectrum-icons/workflow/Circle";
 import { ColorWheel } from "@react-spectrum/color";
 import { parseColor } from "@react-stately/color";
-import Editor from "./Editor2";
+import Editor, { ShapeEditorRef } from "./Editor2";
 import { TriangleIcon } from "./icons";
 
 const ShapeCanvas = () => {
   const fabricRef = React.useRef<fabric.Canvas>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const editorRef = React.useRef<ShapeEditorRef>(null);
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
@@ -42,7 +43,12 @@ const ShapeCanvas = () => {
   return (
     <Flex direction="row" gap="size-100">
       <div>
-        <Editor shapeType={shapeType} />
+        <Editor
+          ref={editorRef}
+          shapeType={shapeType}
+          // undoHistory={undoHistory}
+          // redoHistory={redoHistory}
+        />
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[250px] h-[320px]">
         {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
@@ -98,6 +104,7 @@ const ShapeCanvas = () => {
             variant="secondary"
             onPress={() => {
               // undo();
+              editorRef.current?.undo();
             }}
           >
             <UndoIcon />
@@ -106,6 +113,7 @@ const ShapeCanvas = () => {
             variant="secondary"
             onPress={() => {
               // redo();
+              editorRef.current?.redo();
             }}
           >
             <RedoIcon />

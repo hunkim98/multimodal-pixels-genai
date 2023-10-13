@@ -37,17 +37,15 @@ const Canvas = () => {
 
   useEffect(() => {
     if (finalSelectedColor) {
+      const color = finalSelectedColor.toString("hex");
       dispatchCanvasState({
         type: "color",
         colorType: "fill",
-        color: finalSelectedColor.toString("hex"),
+        color: color,
       });
+      dispatchCanvasState({ type: "color", colorType: "stroke", color });
     }
   }, [finalSelectedColor, dispatchCanvasState]);
-
-  const onChangeFillColor = (color: string) => {
-    dispatchCanvasState({ type: "color", colorType: "fill", color });
-  };
 
   const setMode = (newMode: string) =>
     dispatchCanvasState({ type: "mode", mode: newMode });

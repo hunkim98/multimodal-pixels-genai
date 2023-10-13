@@ -1,17 +1,54 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+  ForwardedRef,
+  useCallback,
+} from "react";
 import { fabric } from "fabric";
 
 interface Props {
   shapeType: "rect" | "ellipse" | "triangle" | undefined;
 }
+export interface ShapeEditorRef {
+  undo: () => void;
+  redo: () => void;
+}
 
-function Editor({ shapeType }: Props) {
+const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
+  { shapeType },
+  ref: ForwardedRef<ShapeEditorRef>,
+) {
   const fabricRef = React.useRef<fabric.Canvas>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const currentShape = React.useRef<
     fabric.Rect | fabric.Circle | fabric.Triangle
   >();
 
+  const [undoHistory, setUndoHistory] = useState<string[]>([
+    `{"version":"5.3.0","objects":[]}`,
+  ]);
+  const [redoHistory, setRedoHistory] = useState<string[]>([]);
+  const undo = () => {
+    const lastState = undoHistory[undoHistory.length - 1];
+    if (!lastState) return;
+    setUndoHistory(undoHistory.slice(0, undoHistory.length - 1));
+    setRedoHistory([...redoHistory, lastState]);
+    fabricRef.current?.loadFromJSON(lastState, function () {
+      fabricRef.current?.renderAll();
+    });
+  };
+
+  const redo = () => {
+    const lastState = redoHistory[redoHistory.length - 1];
+    if (!lastState) return;
+    setRedoHistory(redoHistory.slice(0, redoHistory.length - 1));
+    setUndoHistory([...undoHistory, lastState]);
+    fabricRef.current?.loadFromJSON(lastState, function () {
+      fabricRef.current?.renderAll();
+    });
+  };
   useEffect(() => {
     const initFabric = () => {
       canvasRef.current?.setAttribute("width", "320");
@@ -21,10 +58,8 @@ function Editor({ shapeType }: Props) {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      console.log("hey!");
       if (event.key === "Backspace" || event.key === "Delete") {
         const activeObject = fabricRef.current?.getActiveObject();
-        console.log(activeObject);
         if (activeObject) {
           fabricRef.current?.remove(activeObject);
         }
@@ -46,7 +81,6 @@ function Editor({ shapeType }: Props) {
     const disposeFabric = () => {
       fabricRef.current?.dispose();
     };
-
     initFabric();
     document.addEventListener("keydown", onKeyDown);
 
@@ -58,6 +92,7 @@ function Editor({ shapeType }: Props) {
     };
   }, []);
 
+  const undoFake = useCallback(() => {}, []);
   useEffect(() => {
     if (!fabricRef.current) return;
     const onMouseDownHandler = (event: fabric.IEvent) => {
@@ -147,21 +182,37 @@ function Editor({ shapeType }: Props) {
     };
 
     const onMouseUpHandler = (event: fabric.IEvent) => {
-      if (!currentShape.current) return;
-      if (
-        (currentShape.current.width !== undefined &&
-          Math.abs(currentShape.current.width) <= 3) ||
-        (currentShape.current.height !== undefined &&
-          Math.abs(currentShape.current.height) <= 3)
-      ) {
-        console.log("removing object!", currentShape.current);
-        fabricRef.current?.remove(currentShape.current);
+      let shouldRecordInHistory = true;
+      if (currentShape.current) {
+        if (
+          (currentShape.current &&
+            currentShape.current.width !== undefined &&
+            Math.abs(currentShape.current.width) <= 3) ||
+          (currentShape.current.height !== undefined &&
+            Math.abs(currentShape.current.height) <= 3)
+        ) {
+          shouldRecordInHistory = false;
+          fabricRef.current?.remove(currentShape.current);
+        }
       }
 
       const allObjects = fabricRef.current!.getObjects();
       allObjects.forEach(object => {
         object.selectable = true;
       });
+      if (!event.target) {
+        shouldRecordInHistory = false;
+      }
+
+      if (shouldRecordInHistory) {
+        const state = JSON.stringify(fabricRef.current?.toJSON());
+        console.log(undoHistory.length);
+
+        setUndoHistory(prev => {
+          return [...prev, state];
+        });
+        setRedoHistory([]);
+      }
 
       currentShape.current = undefined;
     };
@@ -177,6 +228,15 @@ function Editor({ shapeType }: Props) {
     };
   }, [shapeType, fabricRef]);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      undo,
+      redo,
+    }),
+    [undo, redo],
+  );
+
   return (
     <canvas
       style={{
@@ -185,6 +245,6 @@ function Editor({ shapeType }: Props) {
       ref={canvasRef}
     />
   );
-}
+});
 
-export default Editor;
+export default ShapeEditor;

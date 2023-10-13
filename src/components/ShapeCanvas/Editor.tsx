@@ -36,6 +36,8 @@ const Canvas = () => {
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
+  const [undoHistory, setUndoHistory] = useState<any[]>([]);
+  const [redoHistory, setRedoHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (finalSelectedColor) {
