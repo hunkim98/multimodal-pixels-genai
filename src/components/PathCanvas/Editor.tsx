@@ -50,7 +50,7 @@ const Canvas = () => {
       <div
         className="workarea"
         style={{
-          width: "320px",
+          // width: "320px",
           height: "320px",
         }}
       >
@@ -60,6 +60,7 @@ const Canvas = () => {
           style={{ position: "relative" }}
         />
       </div>
+      <div>hi</div>
     </div>
   );
 };
