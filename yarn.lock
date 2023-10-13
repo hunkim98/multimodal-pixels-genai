@@ -4851,11 +4851,6 @@ regexp.prototype.flags@^1.5.0, regexp.prototype.flags@^1.5.1:
     define-properties "^1.2.0"
     set-function-name "^2.0.0"
 
-replicate@^0.15.0:
-  version "0.15.1"
-  resolved "https://registry.yarnpkg.com/replicate/-/replicate-0.15.1.tgz#e868b5439f66dc68e18d8d6b6b3a63e5982fa3dc"
-  integrity sha512-Aog3aGIDQqH9O19BJL0eC01WPtxIffPGDeqwRdDYILk9ahE2snxVAFpjXRpYPkn7l5uVnFk1A5KkZkX4Xn4tdA==
-
 requires-port@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/requires-port/-/requires-port-1.0.0.tgz#925d2601d39ac485e091cf0da5c6e694dc3dcaff"

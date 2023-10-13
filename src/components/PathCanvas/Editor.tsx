@@ -23,7 +23,8 @@ import { ColorWheel } from "@react-spectrum/color";
 
 const Canvas = () => {
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
-  const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
+  const [canvasState, dispatchCanvasState, canvasStateDispatcher] =
+    React.useContext(canvasContext);
   const { canvas, selectedElement, mode, updated } = canvasState;
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
@@ -34,6 +35,20 @@ const Canvas = () => {
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
+
+  useEffect(() => {
+    if (finalSelectedColor) {
+      canvasStateDispatcher({
+        type: "color",
+        colorType: "fill",
+        color: finalSelectedColor.toString("hex"),
+      });
+    }
+  }, [finalSelectedColor]);
+
+  const onChangeFillColor = (color: string) => {
+    canvasStateDispatcher({ type: "color", colorType: "fill", color });
+  };
 
   const updateContextPanel = () => {
     let elem = canvasState.selectedElement;
