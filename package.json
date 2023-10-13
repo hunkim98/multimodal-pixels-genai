@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "vercel-build": "yum install gcc-c++ cairo-devel pango-devel libjpeg-turbo-devel giflib-devel"
+    "lint": "next lint"
   },
   "dependencies": {
     "@adobe/react-spectrum": "^3.31.0",
