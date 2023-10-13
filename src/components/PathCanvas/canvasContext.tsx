@@ -56,7 +56,7 @@ const reducer = (state: any, action: any) => {
 };
 
 const canvasInitialState = {
-  mode: "select",
+  mode: "path",
   selectedElement: null,
   multiselected: false,
   updated: false,

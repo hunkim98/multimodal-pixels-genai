@@ -20,7 +20,7 @@ import SelectIcon from "@spectrum-icons/workflow/Select";
 import CircleIcon from "@spectrum-icons/workflow/Circle";
 import { ColorWheel } from "@react-spectrum/color";
 import { parseColor } from "@react-stately/color";
-import Editor, { ShapeEditorRef } from "./Editor2";
+import Editor, { ShapeEditorRef } from "./Editor";
 import { TriangleIcon } from "./icons";
 
 const ShapeCanvas = () => {

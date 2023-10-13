@@ -19,7 +19,7 @@ const config = {
   },
   initOpacity: 1,
   colorPickerCSS: null,
-  initTool: "line",
+  initTool: "path",
   exportWindowType: "new", // 'same' (todo: also support 'download')
   wireframe: false,
   showlayers: false,

@@ -121,7 +121,7 @@ const Canvas = () => {
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}
-            isSelected={mode === "select"}
+            isSelected={mode !== "path"}
             onPress={() => {
               setMode("select");
             }}

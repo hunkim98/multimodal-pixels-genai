@@ -1,208 +1,272 @@
-import SvgCanvas from "@svgedit/svgcanvas";
-import React, { useEffect, useLayoutEffect, useState } from "react";
-import config from "./config";
-import { CanvasContextProvider, canvasContext } from "./canvasContext";
-import updateCanvas from "./updateCanvas";
-import SelectIcon from "@spectrum-icons/workflow/Select";
-import RectangleIcon from "@spectrum-icons/workflow/Rectangle";
-import CircleIcon from "@spectrum-icons/workflow/Circle";
-import {
-  Button,
-  Content,
-  ContextualHelp,
-  Flex,
-  Heading,
-  Slider,
-  Switch,
-  Text,
-  ToggleButton,
-} from "@adobe/react-spectrum";
-import { parseColor } from "@react-stately/color";
-import UndoIcon from "@spectrum-icons/workflow/Undo";
-import RedoIcon from "@spectrum-icons/workflow/Redo";
-import SliceIcon from "@spectrum-icons/workflow/Slice";
-import { ColorWheel } from "@react-spectrum/color";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+  ForwardedRef,
+  useCallback,
+} from "react";
+import { fabric } from "fabric";
 
-const Canvas = () => {
-  const svgcanvasRef = React.useRef<HTMLDivElement>(null);
-  const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
-  const { canvas, selectedElement, mode, updated } = canvasState;
-  const [changingColor, setChangingColor] = useState(
-    parseColor("hsl(50, 100%, 50%)"),
-  );
-  const [finalSelectedColor, setFinalSelectedColor] = useState(
-    parseColor("hsl(50, 100%, 50%)"),
-  );
-  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set(),
-  );
-  const [undoHistory, setUndoHistory] = useState<any[]>([]);
-  const [redoHistory, setRedoHistory] = useState<any[]>([]);
+interface Props {
+  shapeType: "rect" | "ellipse" | "triangle" | undefined;
+}
+export interface ShapeEditorRef {
+  undo: () => void;
+  redo: () => void;
+}
 
+const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
+  { shapeType },
+  ref: ForwardedRef<ShapeEditorRef>,
+) {
+  const fabricRef = React.useRef<fabric.Canvas>();
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const currentShape = React.useRef<{
+    shape: fabric.Rect | fabric.Circle | fabric.Triangle;
+    mouseDownOffset: { offsetX: number; offsetY: number };
+  }>();
+
+  const [undoHistory, setUndoHistory] = useState<string[]>([
+    `{"version":"5.3.0","objects":[]}`,
+  ]);
+  const [redoHistory, setRedoHistory] = useState<string[]>([]);
+  const undo = () => {
+    const lastState = undoHistory[undoHistory.length - 1];
+    if (!lastState) return;
+    setUndoHistory(undoHistory.slice(0, undoHistory.length - 1));
+    setRedoHistory([...redoHistory, lastState]);
+    fabricRef.current?.loadFromJSON(lastState, function () {
+      fabricRef.current?.renderAll();
+    });
+  };
+
+  const redo = () => {
+    const lastState = redoHistory[redoHistory.length - 1];
+    if (!lastState) return;
+    setRedoHistory(redoHistory.slice(0, redoHistory.length - 1));
+    setUndoHistory([...undoHistory, lastState]);
+    fabricRef.current?.loadFromJSON(lastState, function () {
+      fabricRef.current?.renderAll();
+    });
+  };
   useEffect(() => {
-    if (finalSelectedColor) {
-      console.log("finalSelectedColor", finalSelectedColor.toString("hex"));
-      dispatchCanvasState({
-        type: "color",
-        colorType: "fill",
-        color: finalSelectedColor.toString("hex"),
-      });
-    }
-  }, [finalSelectedColor, dispatchCanvasState]);
+    const initFabric = () => {
+      canvasRef.current?.setAttribute("width", "320");
+      canvasRef.current?.setAttribute("height", "320");
+      fabricRef.current = new fabric.Canvas(canvasRef.current);
+      fabricRef.current.isDrawingMode = false;
+    };
 
-  const onChangeFillColor = (color: string) => {
-    dispatchCanvasState({ type: "color", colorType: "fill", color });
-  };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Backspace" || event.key === "Delete") {
+        const activeObject = fabricRef.current?.getActiveObject();
+        if (activeObject) {
+          fabricRef.current?.remove(activeObject);
+        }
+      }
+    };
 
-  const setMode = (newMode: string) =>
-    dispatchCanvasState({ type: "mode", mode: newMode });
+    // const addRectangle = () => {
+    //   const rect = new fabric.Rect({
+    //     top: 50,
+    //     left: 50,
+    //     width: 50,
+    //     height: 50,
+    //     fill: "red",
+    //   });
 
-  const updateContextPanel = () => {
-    let elem = canvasState.selectedElement;
-    // If element has just been deleted, consider it null
-    if (elem && !elem.parentNode) {
-      elem = null;
-    }
-    if (elem) {
-      const { tagName } = elem;
-      // if (tagName === 'text') {
-      //   // we should here adapt the context to a text field
-      //   textRef.current.value = elem.textContent
-      // }
-    }
-  };
+    //   fabricRef.current?.add(rect);
+    // };
 
-  const onKeyDown = (event: any) => {
-    if (event.key === "Backspace" && event.target.tagName !== "INPUT") {
-      event.preventDefault();
-      dispatchCanvasState({ type: "deleteSelectedElements" });
-    }
-  };
+    const disposeFabric = () => {
+      fabricRef.current?.dispose();
+    };
+    initFabric();
+    document.addEventListener("keydown", onKeyDown);
 
-  useLayoutEffect(() => {
-    const editorDom = svgcanvasRef.current;
-    // Promise.resolve().then(() => {
-    const canvas = new SvgCanvas(editorDom, config);
-    updateCanvas(canvas, svgcanvasRef.current, config, true);
-    console.log(canvas);
-    dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
-    dispatchCanvasState({ type: "mode", mode: "path" });
-    document.addEventListener("keydown", onKeyDown.bind(canvas));
+    // addRectangle();
+
     return () => {
-      // cleanup function
-      console.log("cleanup");
-      document.removeEventListener("keydown", onKeyDown.bind(canvas));
+      disposeFabric();
+      document.removeEventListener("keydown", onKeyDown);
     };
   }, []);
-  updateContextPanel();
-  return (
-    <Flex direction="row" gap="size-100">
-      <div className="OIe-editor" role="main">
-        <div
-          className="workarea"
-          style={{
-            width: "320px",
-            height: "320px",
-          }}
-        >
-          <div
-            ref={svgcanvasRef}
-            className="svgcanvas"
-            style={{ position: "relative" }}
-          />
-        </div>
-      </div>
-      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
-        {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
-          <ContextualHelp variant="info">
-            <Heading>How to use?</Heading>
-            <Content>
-              <Text>
-                The pixel canvas is a supplementary tool to help you give the
-                model a rough image input to refer to when generating images.
-                You are free to pan and zoom the canvas
-              </Text>
-            </Content>
-          </ContextualHelp>
-        </Flex> */}
-        <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
-          <ToggleButton
-            width={"size-600"}
-            isSelected={mode === "select"}
-            onPress={() => {
-              setMode("select");
-            }}
-          >
-            <SelectIcon />
-          </ToggleButton>
-          <ToggleButton
-            isSelected={mode === "path"}
-            width={"size-600"}
-            onPress={() => {
-              setMode("path");
-              // changeBrushTool(BrushTool.ERASER);
-            }}
-          >
-            <SliceIcon />
-          </ToggleButton>
-          <Button
-            variant="secondary"
-            onPress={() => {
-              canvas.undoMgr.undo();
-            }}
-          >
-            <UndoIcon />
-          </Button>
-          <Button
-            variant="secondary"
-            onPress={() => {
-              canvas.undoMgr.redo();
-            }}
-          >
-            <RedoIcon />
-          </Button>
-        </Flex>
 
-        <ColorWheel
-          size={130}
-          UNSAFE_className="my-5 mx-auto"
-          defaultValue="hsl(30, 100%, 50%)"
-          value={changingColor}
-          onChange={color => {
-            setChangingColor(color);
-          }}
-          onChangeEnd={setFinalSelectedColor}
-        />
+  const undoFake = useCallback(() => {}, []);
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    const onMouseDownHandler = (event: fabric.IEvent) => {
+      if (!shapeType) return;
+      if (event.target) {
+        return; // if we have clicked on an existing shape, don't create a new one
+      }
+      const { offsetX, offsetY } = event.e as MouseEvent;
+      const { top, left } = currentShape.current?.shape.getBoundingRect() || {
+        top: 0,
+        left: 0,
+      };
+      const allObjects = fabricRef.current!.getObjects();
+      allObjects.forEach(object => {
+        object.selectable = false;
+      });
 
-        <Flex direction="column">
-          <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
-          <Flex gap="size-100" wrap>
-            {Array.from(recentlyUsedColors).map(color => (
-              <div
-                key={color}
-                className={`w-6 h-6 rounded-full`}
-                style={{
-                  backgroundColor: color,
-                }}
-                onClick={() => {
-                  const newColor = parseColor(color);
-                  setFinalSelectedColor(newColor);
-                }}
-              />
-            ))}
-          </Flex>
-        </Flex>
-      </div>
-    </Flex>
+      if (shapeType === "rect") {
+        const rect = new fabric.Rect({
+          top: offsetY - top,
+          left: offsetX - left,
+          width: 0,
+          height: 0,
+          fill: "red",
+        });
+        currentShape.current = {
+          shape: rect,
+          mouseDownOffset: { offsetX, offsetY },
+        };
+        fabricRef.current!.add(rect);
+      } else if (shapeType === "ellipse") {
+        const ellipse = new fabric.Ellipse({
+          top: offsetY - top,
+          left: offsetX - left,
+          fill: "red",
+        });
+        currentShape.current = {
+          shape: ellipse,
+          mouseDownOffset: { offsetX, offsetY },
+        };
+        fabricRef.current!.add(ellipse);
+      } else if (shapeType === "triangle") {
+        const triangle = new fabric.Triangle({
+          top: offsetY - top,
+          left: offsetX - left,
+          width: 0,
+          height: 0,
+          fill: "red",
+        });
+        currentShape.current = {
+          shape: triangle,
+          mouseDownOffset: { offsetX, offsetY },
+        };
+        fabricRef.current!.add(triangle);
+      }
+    };
+
+    const onMouseMoveHandler = (event: fabric.IEvent) => {
+      if (!shapeType) return;
+      // we could already be clicking a shape
+      const { offsetX, offsetY } = event.e as MouseEvent;
+      const mouseDown = currentShape.current?.mouseDownOffset;
+      if (!mouseDown) return;
+
+      const xDistance = offsetX - mouseDown.offsetX;
+      const yDistance = offsetY - mouseDown.offsetY;
+      if (!currentShape.current) return;
+
+      const shouldFlipX = xDistance > 0;
+      const shouldFlipY = yDistance > 0;
+      if (shapeType === "rect") {
+        (currentShape.current.shape as fabric.Rect).set({
+          width: Math.abs(xDistance),
+          height: Math.abs(yDistance),
+          // scaleX: offsetX - mouseDown.offsetX > 0 ? -1 : 1,
+          // scaleY: offsetY - mouseDown.offsetY > 0 ? -1 : 1,
+          // flipX: offsetX < left,
+          // flipY: offsetY < top,
+          // flipX: shouldFlipX,
+          // flipY: shouldFlipY,
+          originX: shouldFlipX ? "left" : "right",
+          originY: shouldFlipY ? "top" : "bottom",
+        });
+        currentShape.current.shape.setCoords();
+      } else if (shapeType === "ellipse") {
+        (currentShape.current.shape as fabric.Ellipse).set({
+          rx: Math.abs(xDistance / 2),
+          ry: Math.abs(yDistance / 2),
+          originX: shouldFlipX ? "left" : "right",
+          originY: shouldFlipY ? "top" : "bottom",
+        });
+        currentShape.current.shape.setCoords();
+      } else if (shapeType === "triangle") {
+        (currentShape.current.shape as fabric.Triangle).set({
+          // width: offsetX - left,
+          // height: offsetY - top,
+          width: Math.abs(xDistance),
+          height: Math.abs(yDistance),
+          originX: shouldFlipX ? "left" : "right",
+          originY: shouldFlipY ? "top" : "bottom",
+          flipX: shouldFlipX,
+          flipY: shouldFlipY,
+        });
+        currentShape.current.shape.setCoords();
+      }
+
+      fabricRef.current?.renderAll();
+    };
+
+    const onMouseUpHandler = (event: fabric.IEvent) => {
+      let shouldRecordInHistory = true;
+      if (currentShape.current) {
+        if (
+          (currentShape.current &&
+            currentShape.current.shape.width !== undefined &&
+            Math.abs(currentShape.current.shape.width) <= 3) ||
+          (currentShape.current.shape.height !== undefined &&
+            Math.abs(currentShape.current.shape.height) <= 3)
+        ) {
+          shouldRecordInHistory = false;
+          fabricRef.current?.remove(currentShape.current.shape);
+        }
+      }
+
+      const allObjects = fabricRef.current!.getObjects();
+      allObjects.forEach(object => {
+        object.selectable = true;
+      });
+      if (!event.target) {
+        shouldRecordInHistory = false;
+      }
+
+      if (shouldRecordInHistory) {
+        const state = JSON.stringify(fabricRef.current?.toJSON());
+        console.log(undoHistory.length);
+
+        setUndoHistory(prev => {
+          return [...prev, state];
+        });
+        setRedoHistory([]);
+      }
+
+      currentShape.current = undefined;
+    };
+
+    fabricRef.current.on("mouse:down", onMouseDownHandler);
+    fabricRef.current.on("mouse:move", onMouseMoveHandler);
+    fabricRef.current.on("mouse:up", onMouseUpHandler);
+
+    return () => {
+      fabricRef.current?.off("mouse:down", onMouseDownHandler);
+      fabricRef.current?.off("mouse:move", onMouseMoveHandler);
+      fabricRef.current?.off("mouse:up", onMouseUpHandler);
+    };
+  }, [shapeType, fabricRef]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      undo,
+      redo,
+    }),
+    [undo, redo],
   );
-};
 
-const CanvasWithContext = (props: any) => (
-  <CanvasContextProvider>
-    <Canvas {...props} />
-  </CanvasContextProvider>
-);
+  return (
+    <canvas
+      style={{
+        border: "0.5px solid black",
+      }}
+      ref={canvasRef}
+    />
+  );
+});
 
-export default CanvasWithContext;
-
-// export default DynamicPathCanvas;
+export default ShapeEditor;
