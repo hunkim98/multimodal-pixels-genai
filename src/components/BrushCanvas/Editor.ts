@@ -655,12 +655,12 @@ export class Editor extends EventDispatcher {
         width: this.canvasInfo.width,
         height: this.canvasInfo.height,
       };
-      touchy(
-        this.interactionCanvasElement,
-        addEvent,
-        "mousemove",
-        this.handleExtension,
-      );
+      // touchy(
+      //   this.interactionCanvasElement,
+      //   addEvent,
+      //   "mousemove",
+      //   this.handleExtension,
+      // );
       return;
     }
 

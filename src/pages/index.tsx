@@ -31,13 +31,24 @@ import BrushCanvas from "@/components/BrushCanvas";
 import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
 import { BrushData } from "@/components/BrushCanvas/Editor";
 import SketchCanvas from "@/components/SketchCanvas";
+import ShapeCanvas from "@/components/ShapeCanvas";
+import PathCanvas from "@/components/PathCanvas";
+import dynamic from "next/dynamic";
+
+const DynamicComponentWithNoSSR = dynamic(
+  () => import("../components/PathCanvas/Editor"),
+  {
+    ssr: false,
+  },
+);
 
 const inter = Inter({ subsets: ["latin"] });
 
 enum AssistiveImageInputType {
-  SKETCH = "sketch",
   BRUSH = "brush",
   PIXELS = "pixels",
+  SHAPE = "shape",
+  PATH = "PATH",
 }
 
 export default function Home() {
@@ -63,7 +74,7 @@ export default function Home() {
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
-    useState<AssistiveImageInputType>(AssistiveImageInputType.SKETCH);
+    useState<AssistiveImageInputType>(AssistiveImageInputType.SHAPE);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
@@ -174,21 +185,6 @@ export default function Home() {
                       return;
                     }
                   }
-                  if (
-                    selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.SKETCH
-                  ) {
-                    if (sketchCanvasImageBlob) {
-                      blobToBase64(sketchCanvasImageBlob)
-                        .then(base64String => {
-                          generateImages(base64String as string);
-                        })
-                        .catch(err => {
-                          setIsModelActive(false);
-                        });
-                      return;
-                    }
-                  }
                   generateImages();
                 }
                 // setIsAssistiveCanvasOpen(false);
@@ -227,18 +223,18 @@ export default function Home() {
                   <ToggleButton
                     isSelected={
                       selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.SKETCH
+                      AssistiveImageInputType.SHAPE
                     }
                     UNSAFE_style={{
                       fontWeight: "bold",
                     }}
                     onPressChange={() => {
                       setSelectedAssistiveImageInputType(
-                        AssistiveImageInputType.SKETCH,
+                        AssistiveImageInputType.SHAPE,
                       );
                     }}
                   >
-                    Outline Sketch
+                    Shape Tool
                   </ToggleButton>
                   <ToggleButton
                     isSelected={
@@ -272,6 +268,22 @@ export default function Home() {
                   >
                     Pixel Squares
                   </ToggleButton>
+                  <ToggleButton
+                    isSelected={
+                      selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.PATH
+                    }
+                    UNSAFE_style={{
+                      fontWeight: "bold",
+                    }}
+                    onPressChange={() => {
+                      setSelectedAssistiveImageInputType(
+                        AssistiveImageInputType.PATH,
+                      );
+                    }}
+                  >
+                    Path Tool
+                  </ToggleButton>
                 </Flex>
                 <div
                   className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
@@ -297,17 +309,9 @@ export default function Home() {
                     />
                   )}
                   {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.SKETCH && (
-                    <SketchCanvas
-                      canvasWidth={initialSketchData?.canvasWidth}
-                      canvasHeight={initialSketchData?.canvasHeight}
-                      canvasLeftTopX={initialSketchData?.canvasLeftTopX}
-                      canvasLeftTopY={initialSketchData?.canvasLeftTopY}
-                      initData={initialSketchData?.data}
-                      setInitialSketchData={setInitialSketchData}
-                      setSketchCanvasImageBlob={setSketchCanvasImageBlob}
-                    />
-                  )}
+                    AssistiveImageInputType.SHAPE && <ShapeCanvas />}
+                  {/* {selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PATH && <PathCanvas />} */}
                 </div>
               </>
             )}
@@ -316,6 +320,9 @@ export default function Home() {
       </div>
       <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">
         <Text UNSAFE_className="text-lg font-bold">Generated Images</Text>
+        <div style={{}}>
+          <DynamicComponentWithNoSSR />
+        </div>
         <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
           {galleryImage.map(image => (
             <Image

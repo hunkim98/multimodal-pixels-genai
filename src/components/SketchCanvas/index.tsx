@@ -355,8 +355,8 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
       <div className="bg-white">
         <div
           style={{
-            width: 350,
-            height: 350,
+            width: 320,
+            height: 320,
             position: "relative",
             outline: "none",
           }}
@@ -396,7 +396,7 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
           />
         </div>
       </div>
-      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[350px]">
+      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
         <Flex
           justifyContent={"space-between"}
           alignItems={"center"}
