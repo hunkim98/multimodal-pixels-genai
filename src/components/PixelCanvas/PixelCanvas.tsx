@@ -45,7 +45,7 @@ interface Props {
 }
 function PixelCanvas({ initialData, setInitialData }: Props) {
   const dottingRef = useRef<DottingRef>(null);
-  const [isGridVisible, setIsGridVisible] = useState(true);
+  const [isGridVisible, setIsGridVisible] = useState(false);
   const { clear, undo, redo } = useDotting(dottingRef);
   const { changeBrushColor, changeBrushTool, changeBrushPattern, brushTool } =
     useBrush(dottingRef);
