@@ -20,7 +20,7 @@ import SelectIcon from "@spectrum-icons/workflow/Select";
 import CircleIcon from "@spectrum-icons/workflow/Circle";
 import { ColorWheel } from "@react-spectrum/color";
 import { parseColor } from "@react-stately/color";
-import Editor from "./Editor";
+import Editor from "./Editor2";
 import { TriangleIcon } from "./icons";
 
 const ShapeCanvas = () => {
@@ -45,17 +45,7 @@ const ShapeCanvas = () => {
         <Editor shapeType={shapeType} />
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
-        <Flex justifyContent={"space-between"} alignItems={"center"}>
-          <Flex alignItems={"center"}>
-            <Text
-              UNSAFE_className="text-[12px]"
-              UNSAFE_style={{
-                marginLeft: "-5px",
-              }}
-            >
-              Show Grids
-            </Text>
-          </Flex>
+        {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
           <ContextualHelp variant="info">
             <Heading>How to use?</Heading>
             <Content>
@@ -66,7 +56,7 @@ const ShapeCanvas = () => {
               </Text>
             </Content>
           </ContextualHelp>
-        </Flex>
+        </Flex> */}
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}
@@ -121,7 +111,7 @@ const ShapeCanvas = () => {
             <RedoIcon />
           </Button>
         </Flex>
-        <Slider
+        {/* <Slider
           labelPosition="side"
           label="brush size"
           showValueLabel={false}
@@ -133,7 +123,7 @@ const ShapeCanvas = () => {
           }}
           minValue={1}
           maxValue={5}
-        />
+        /> */}
         <ColorWheel
           size={130}
           UNSAFE_className="my-5 mx-auto"

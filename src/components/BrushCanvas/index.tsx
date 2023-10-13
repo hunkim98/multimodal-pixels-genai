@@ -397,7 +397,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
         </div>
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
-        <Flex
+        {/* <Flex
           justifyContent={"space-between"}
           alignItems={"center"}
           height={32}
@@ -412,7 +412,7 @@ const BrushCanvas: React.FC<BrushCanvasProps> = props => {
               </Text>
             </Content>
           </ContextualHelp>
-        </Flex>
+        </Flex> */}
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}

@@ -1,190 +1,206 @@
-import React, { useEffect, useState } from "react";
-import { fabric } from "fabric";
+import SvgCanvas from "@svgedit/svgcanvas";
+import React, { useEffect, useLayoutEffect, useState } from "react";
+import config from "./config";
+import { CanvasContextProvider, canvasContext } from "./canvasContext";
+import updateCanvas from "./updateCanvas";
+import SelectIcon from "@spectrum-icons/workflow/Select";
+import RectangleIcon from "@spectrum-icons/workflow/Rectangle";
+import CircleIcon from "@spectrum-icons/workflow/Circle";
+import {
+  Button,
+  Content,
+  ContextualHelp,
+  Flex,
+  Heading,
+  Slider,
+  Switch,
+  Text,
+  ToggleButton,
+} from "@adobe/react-spectrum";
+import { parseColor } from "@react-stately/color";
+import UndoIcon from "@spectrum-icons/workflow/Undo";
+import RedoIcon from "@spectrum-icons/workflow/Redo";
+import SliceIcon from "@spectrum-icons/workflow/Slice";
+import { ColorWheel } from "@react-spectrum/color";
 
-interface Props {
-  shapeType: "rect" | "ellipse" | "triangle" | undefined;
-}
-
-function Editor({ shapeType }: Props) {
-  const fabricRef = React.useRef<fabric.Canvas>();
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const currentShape = React.useRef<
-    fabric.Rect | fabric.Circle | fabric.Triangle
-  >();
+const Canvas = () => {
+  const svgcanvasRef = React.useRef<HTMLDivElement>(null);
+  const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
+  const { canvas, selectedElement, mode, updated } = canvasState;
+  const [changingColor, setChangingColor] = useState(
+    parseColor("hsl(50, 100%, 50%)"),
+  );
+  const [finalSelectedColor, setFinalSelectedColor] = useState(
+    parseColor("hsl(50, 100%, 50%)"),
+  );
+  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
-    const initFabric = () => {
-      canvasRef.current?.setAttribute("width", "320");
-      canvasRef.current?.setAttribute("height", "320");
-      fabricRef.current = new fabric.Canvas(canvasRef.current);
-      fabricRef.current.isDrawingMode = false;
-    };
+    if (finalSelectedColor) {
+      console.log("finalSelectedColor", finalSelectedColor.toString("hex"));
+      dispatchCanvasState({
+        type: "color",
+        colorType: "fill",
+        color: finalSelectedColor.toString("hex"),
+      });
+    }
+  }, [finalSelectedColor, dispatchCanvasState]);
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      console.log("hey!");
-      if (event.key === "Backspace" || event.key === "Delete") {
-        const activeObject = fabricRef.current?.getActiveObject();
-        console.log(activeObject);
-        if (activeObject) {
-          fabricRef.current?.remove(activeObject);
-        }
-      }
-    };
+  const onChangeFillColor = (color: string) => {
+    dispatchCanvasState({ type: "color", colorType: "fill", color });
+  };
 
-    // const addRectangle = () => {
-    //   const rect = new fabric.Rect({
-    //     top: 50,
-    //     left: 50,
-    //     width: 50,
-    //     height: 50,
-    //     fill: "red",
-    //   });
+  const setMode = (newMode: string) =>
+    dispatchCanvasState({ type: "mode", mode: newMode });
 
-    //   fabricRef.current?.add(rect);
-    // };
+  const updateContextPanel = () => {
+    let elem = canvasState.selectedElement;
+    // If element has just been deleted, consider it null
+    if (elem && !elem.parentNode) {
+      elem = null;
+    }
+    if (elem) {
+      const { tagName } = elem;
+      // if (tagName === 'text') {
+      //   // we should here adapt the context to a text field
+      //   textRef.current.value = elem.textContent
+      // }
+    }
+  };
 
-    const disposeFabric = () => {
-      fabricRef.current?.dispose();
-    };
+  const onKeyDown = (event: any) => {
+    if (event.key === "Backspace" && event.target.tagName !== "INPUT") {
+      event.preventDefault();
+      dispatchCanvasState({ type: "deleteSelectedElements" });
+    }
+  };
 
-    initFabric();
-    document.addEventListener("keydown", onKeyDown);
-
-    // addRectangle();
-
+  useLayoutEffect(() => {
+    const editorDom = svgcanvasRef.current;
+    // Promise.resolve().then(() => {
+    const canvas = new SvgCanvas(editorDom, config);
+    updateCanvas(canvas, svgcanvasRef.current, config, true);
+    console.log(canvas);
+    dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
+    dispatchCanvasState({ type: "mode", mode: "path" });
+    document.addEventListener("keydown", onKeyDown.bind(canvas));
     return () => {
-      disposeFabric();
-      document.removeEventListener("keydown", onKeyDown);
+      // cleanup function
+      console.log("cleanup");
+      document.removeEventListener("keydown", onKeyDown.bind(canvas));
     };
   }, []);
-
-  useEffect(() => {
-    if (!fabricRef.current) return;
-    const onMouseDownHandler = (event: fabric.IEvent) => {
-      if (!shapeType) return;
-      if (event.target) {
-        return; // if we have clicked on an existing shape, don't create a new one
-      }
-      const { offsetX, offsetY } = event.e as MouseEvent;
-      const { top, left } = currentShape.current?.getBoundingRect() || {
-        top: 0,
-        left: 0,
-      };
-      const allObjects = fabricRef.current!.getObjects();
-      allObjects.forEach(object => {
-        object.selectable = false;
-      });
-
-      if (shapeType === "rect") {
-        const rect = new fabric.Rect({
-          top: offsetY - top,
-          left: offsetX - left,
-          width: 0,
-          height: 0,
-          fill: "red",
-        });
-        currentShape.current = rect;
-        fabricRef.current!.add(rect);
-      } else if (shapeType === "ellipse") {
-        const ellipse = new fabric.Ellipse({
-          top: offsetY - top,
-          left: offsetX - left,
-          fill: "red",
-        });
-        currentShape.current = ellipse;
-        fabricRef.current!.add(ellipse);
-      } else if (shapeType === "triangle") {
-        const triangle = new fabric.Triangle({
-          top: offsetY - top,
-          left: offsetX - left,
-          width: 0,
-          height: 0,
-          fill: "red",
-        });
-        currentShape.current = triangle;
-        fabricRef.current!.add(triangle);
-      }
-    };
-
-    const onMouseMoveHandler = (event: fabric.IEvent) => {
-      if (!shapeType) return;
-      // we could already be clicking a shape
-      const { offsetX, offsetY } = event.e as MouseEvent;
-      const { top, left } = currentShape.current?.getBoundingRect() || {
-        top: 0,
-        left: 0,
-      };
-      if (!currentShape.current) return;
-      if (shapeType === "rect") {
-        (currentShape.current as fabric.Rect).set({
-          width: offsetX - left,
-          height: offsetY - top,
-        });
-        currentShape.current.setCoords();
-      } else if (shapeType === "ellipse") {
-        const xDistance = offsetX - left;
-        const yDistance = offsetY - top;
-
-        const shouldFlipX = xDistance < 0;
-        const shouldFlipY = yDistance < 0;
-
-        (currentShape.current as fabric.Ellipse).set({
-          rx: Math.abs(xDistance / 2),
-          ry: Math.abs(yDistance / 2),
-          originX: shouldFlipX ? "right" : "left",
-          originY: shouldFlipY ? "bottom" : "top",
-        });
-        currentShape.current.setCoords();
-      } else if (shapeType === "triangle") {
-        (currentShape.current as fabric.Triangle).set({
-          width: offsetX - left,
-          height: offsetY - top,
-        });
-        currentShape.current.setCoords();
-      }
-
-      fabricRef.current?.renderAll();
-    };
-
-    const onMouseUpHandler = (event: fabric.IEvent) => {
-      if (!currentShape.current) return;
-      if (
-        (currentShape.current.width !== undefined &&
-          Math.abs(currentShape.current.width) <= 3) ||
-        (currentShape.current.height !== undefined &&
-          Math.abs(currentShape.current.height) <= 3)
-      ) {
-        console.log("removing object!", currentShape.current);
-        fabricRef.current?.remove(currentShape.current);
-      }
-
-      const allObjects = fabricRef.current!.getObjects();
-      allObjects.forEach(object => {
-        object.selectable = true;
-      });
-
-      currentShape.current = undefined;
-    };
-
-    fabricRef.current.on("mouse:down", onMouseDownHandler);
-    fabricRef.current.on("mouse:move", onMouseMoveHandler);
-    fabricRef.current.on("mouse:up", onMouseUpHandler);
-
-    return () => {
-      fabricRef.current?.off("mouse:down", onMouseDownHandler);
-      fabricRef.current?.off("mouse:move", onMouseMoveHandler);
-      fabricRef.current?.off("mouse:up", onMouseUpHandler);
-    };
-  }, [shapeType, fabricRef]);
-
+  updateContextPanel();
   return (
-    <canvas
-      style={{
-        border: "1px solid black",
-      }}
-      ref={canvasRef}
-    />
-  );
-}
+    <Flex direction="row" gap="size-100">
+      <div className="OIe-editor" role="main">
+        <div
+          className="workarea"
+          style={{
+            width: "320px",
+            height: "320px",
+          }}
+        >
+          <div
+            ref={svgcanvasRef}
+            className="svgcanvas"
+            style={{ position: "relative" }}
+          />
+        </div>
+      </div>
+      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
+        {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
+          <ContextualHelp variant="info">
+            <Heading>How to use?</Heading>
+            <Content>
+              <Text>
+                The pixel canvas is a supplementary tool to help you give the
+                model a rough image input to refer to when generating images.
+                You are free to pan and zoom the canvas
+              </Text>
+            </Content>
+          </ContextualHelp>
+        </Flex> */}
+        <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
+          <ToggleButton
+            width={"size-600"}
+            isSelected={mode === "select"}
+            onPress={() => {
+              setMode("select");
+            }}
+          >
+            <SelectIcon />
+          </ToggleButton>
+          <ToggleButton
+            isSelected={mode === "path"}
+            width={"size-600"}
+            onPress={() => {
+              setMode("path");
+              // changeBrushTool(BrushTool.ERASER);
+            }}
+          >
+            <SliceIcon />
+          </ToggleButton>
+          <Button
+            variant="secondary"
+            onPress={() => {
+              canvas.undoMgr.undo();
+            }}
+          >
+            <UndoIcon />
+          </Button>
+          <Button
+            variant="secondary"
+            onPress={() => {
+              canvas.undoMgr.redo();
+            }}
+          >
+            <RedoIcon />
+          </Button>
+        </Flex>
 
-export default Editor;
+        <ColorWheel
+          size={130}
+          UNSAFE_className="my-5 mx-auto"
+          defaultValue="hsl(30, 100%, 50%)"
+          value={changingColor}
+          onChange={color => {
+            setChangingColor(color);
+          }}
+          onChangeEnd={setFinalSelectedColor}
+        />
+
+        <Flex direction="column">
+          <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
+          <Flex gap="size-100" wrap>
+            {Array.from(recentlyUsedColors).map(color => (
+              <div
+                key={color}
+                className={`w-6 h-6 rounded-full`}
+                style={{
+                  backgroundColor: color,
+                }}
+                onClick={() => {
+                  const newColor = parseColor(color);
+                  setFinalSelectedColor(newColor);
+                }}
+              />
+            ))}
+          </Flex>
+        </Flex>
+      </div>
+    </Flex>
+  );
+};
+
+const CanvasWithContext = (props: any) => (
+  <CanvasContextProvider>
+    <Canvas {...props} />
+  </CanvasContextProvider>
+);
+
+export default CanvasWithContext;
+
+// export default DynamicPathCanvas;

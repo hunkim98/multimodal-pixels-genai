@@ -37,7 +37,6 @@ const Canvas = () => {
 
   useEffect(() => {
     if (finalSelectedColor) {
-      console.log("finalSelectedColor", finalSelectedColor.toString("hex"));
       dispatchCanvasState({
         type: "color",
         colorType: "fill",
@@ -109,18 +108,7 @@ const Canvas = () => {
         </div>
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
-        <Flex justifyContent={"space-between"} alignItems={"center"}>
-          <Flex alignItems={"center"}>
-            {/* <Switch isSelected={isGridVisible} onChange={setIsGridVisible} /> */}
-            <Text
-              UNSAFE_className="text-[12px]"
-              UNSAFE_style={{
-                marginLeft: "-5px",
-              }}
-            >
-              Show Grids
-            </Text>
-          </Flex>
+        {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
           <ContextualHelp variant="info">
             <Heading>How to use?</Heading>
             <Content>
@@ -131,7 +119,7 @@ const Canvas = () => {
               </Text>
             </Content>
           </ContextualHelp>
-        </Flex>
+        </Flex> */}
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}

@@ -310,8 +310,8 @@ export default function Home() {
                   )}
                   {selectedAsssistivImageInputType ===
                     AssistiveImageInputType.SHAPE && <ShapeCanvas />}
-                  {/* {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.PATH && <PathCanvas />} */}
+                  {selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PATH && <PathCanvas />}
                 </div>
               </>
             )}
@@ -320,9 +320,9 @@ export default function Home() {
       </div>
       <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">
         <Text UNSAFE_className="text-lg font-bold">Generated Images</Text>
-        <div style={{}}>
+        {/* <div style={{}}>
           <DynamicComponentWithNoSSR />
-        </div>
+        </div> */}
         <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
           {galleryImage.map(image => (
             <Image
