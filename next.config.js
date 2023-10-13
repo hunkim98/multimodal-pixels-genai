@@ -3,8 +3,8 @@ const nextConfig = {
   reactStrictMode: false,
   transpilePackages: [
     "@adobe/react-spectrum",
-    "@react-spectrum/actionbar",
     "@react-spectrum/color",
+    "@react-spectrum/actionbar",
     "@react-spectrum/actiongroup",
     "@react-spectrum/avatar",
     "@react-spectrum/badge",
@@ -22,6 +22,7 @@ const nextConfig = {
     "@react-spectrum/form",
     "@react-spectrum/icon",
     "@react-spectrum/illustratedmessage",
+    "@react-spectrum/inlinealert",
     "@react-spectrum/image",
     "@react-spectrum/label",
     "@react-spectrum/labeledvalue",
