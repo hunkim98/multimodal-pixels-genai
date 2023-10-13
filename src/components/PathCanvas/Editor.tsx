@@ -23,8 +23,7 @@ import { ColorWheel } from "@react-spectrum/color";
 
 const Canvas = () => {
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
-  const [canvasState, dispatchCanvasState, canvasStateDispatcher] =
-    React.useContext(canvasContext);
+  const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
   const { canvas, selectedElement, mode, updated } = canvasState;
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
@@ -38,17 +37,21 @@ const Canvas = () => {
 
   useEffect(() => {
     if (finalSelectedColor) {
-      canvasStateDispatcher({
+      console.log("finalSelectedColor", finalSelectedColor.toString("hex"));
+      dispatchCanvasState({
         type: "color",
         colorType: "fill",
         color: finalSelectedColor.toString("hex"),
       });
     }
-  }, [finalSelectedColor]);
+  }, [finalSelectedColor, dispatchCanvasState]);
 
   const onChangeFillColor = (color: string) => {
-    canvasStateDispatcher({ type: "color", colorType: "fill", color });
+    dispatchCanvasState({ type: "color", colorType: "fill", color });
   };
+
+  const setMode = (newMode: string) =>
+    dispatchCanvasState({ type: "mode", mode: newMode });
 
   const updateContextPanel = () => {
     let elem = canvasState.selectedElement;
@@ -132,19 +135,18 @@ const Canvas = () => {
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}
+            isSelected={mode === "select"}
             onPress={() => {
-              // changeBrushTool(BrushTool.DOT);
+              setMode("select");
             }}
           >
             <SelectIcon />
           </ToggleButton>
           <ToggleButton
-            isSelected={
-              // brushTool === BrushTool.ERASER
-              false
-            }
+            isSelected={mode === "path"}
             width={"size-600"}
             onPress={() => {
+              setMode("path");
               // changeBrushTool(BrushTool.ERASER);
             }}
           >
