@@ -44,7 +44,7 @@ const ShapeCanvas = () => {
       <div>
         <Editor shapeType={shapeType} />
       </div>
-      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
+      <div className="relative flex flex-col align-middle px-3 py-3 w-[250px] h-[320px]">
         {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
           <ContextualHelp variant="info">
             <Heading>How to use?</Heading>

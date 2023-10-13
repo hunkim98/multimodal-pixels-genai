@@ -180,7 +180,7 @@ function Editor({ shapeType }: Props) {
   return (
     <canvas
       style={{
-        border: "1px solid black",
+        border: "0.5px solid black",
       }}
       ref={canvasRef}
     />

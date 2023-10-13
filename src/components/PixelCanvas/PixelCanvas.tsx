@@ -163,11 +163,11 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
           isGridVisible={isGridVisible}
           isPanZoomable={false}
           style={{
-            border: "none",
+            border: "0.5px solid black",
           }}
         />
       </div>
-      <div className="relative flex flex-col align-middle px-3 py-3 w-[210px] h-[320px]">
+      <div className="relative flex flex-col align-middle px-3 py-3 w-[250px] h-[320px]">
         {/* <Flex justifyContent={"space-between"} alignItems={"center"}>
           <Flex alignItems={"center"}>
             <Switch isSelected={isGridVisible} onChange={setIsGridVisible} />
