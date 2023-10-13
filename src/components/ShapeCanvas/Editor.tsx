@@ -10,14 +10,17 @@ import { fabric } from "fabric";
 
 interface Props {
   shapeType: "rect" | "ellipse" | "triangle" | undefined;
+  color: string;
 }
 export interface ShapeEditorRef {
   undo: () => void;
   redo: () => void;
+  colorSelectedShape: (color: string) => void;
+  recordInHistory: () => void;
 }
 
 const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
-  { shapeType },
+  { shapeType, color },
   ref: ForwardedRef<ShapeEditorRef>,
 ) {
   const fabricRef = React.useRef<fabric.Canvas>();
@@ -50,6 +53,23 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       fabricRef.current?.renderAll();
     });
   };
+
+  const recordInHistory = () => {
+    const state = JSON.stringify(fabricRef.current?.toJSON());
+    setUndoHistory(prev => {
+      return [...prev, state];
+    });
+    setRedoHistory([]);
+  };
+
+  const colorSelectedShape = (color: string) => {
+    const activeObject = fabricRef.current?.getActiveObject();
+    console.log(color, activeObject);
+    if (activeObject) {
+      activeObject.set("fill", color);
+      fabricRef.current?.renderAll();
+    }
+  };
   useEffect(() => {
     const initFabric = () => {
       canvasRef.current?.setAttribute("width", "320");
@@ -73,7 +93,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     //     left: 50,
     //     width: 50,
     //     height: 50,
-    //     fill: "red",
+    //     fill: color,
     //   });
 
     //   fabricRef.current?.add(rect);
@@ -93,7 +113,6 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     };
   }, []);
 
-  const undoFake = useCallback(() => {}, []);
   useEffect(() => {
     if (!fabricRef.current) return;
     const onMouseDownHandler = (event: fabric.IEvent) => {
@@ -117,7 +136,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
           left: offsetX - left,
           width: 0,
           height: 0,
-          fill: "red",
+          fill: color,
         });
         currentShape.current = {
           shape: rect,
@@ -128,7 +147,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
         const ellipse = new fabric.Ellipse({
           top: offsetY - top,
           left: offsetX - left,
-          fill: "red",
+          fill: color,
         });
         currentShape.current = {
           shape: ellipse,
@@ -141,7 +160,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
           left: offsetX - left,
           width: 0,
           height: 0,
-          fill: "red",
+          fill: color,
         });
         currentShape.current = {
           shape: triangle,
@@ -248,15 +267,17 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       fabricRef.current?.off("mouse:move", onMouseMoveHandler);
       fabricRef.current?.off("mouse:up", onMouseUpHandler);
     };
-  }, [shapeType, fabricRef]);
+  }, [shapeType, fabricRef, color]);
 
   useImperativeHandle(
     ref,
     () => ({
       undo,
       redo,
+      colorSelectedShape,
+      recordInHistory,
     }),
-    [undo, redo],
+    [undo, redo, colorSelectedShape, recordInHistory],
   );
 
   return (

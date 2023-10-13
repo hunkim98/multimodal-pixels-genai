@@ -33,6 +33,11 @@ const ShapeCanvas = () => {
   const [finalSelectedColor, setFinalSelectedColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
+  useEffect(() => {
+    const newColor = finalSelectedColor;
+    editorRef.current?.colorSelectedShape(newColor.toString("hex"));
+    editorRef.current?.recordInHistory();
+  }, [finalSelectedColor]);
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
@@ -46,6 +51,7 @@ const ShapeCanvas = () => {
         <Editor
           ref={editorRef}
           shapeType={shapeType}
+          color={finalSelectedColor.toString("hex")}
           // undoHistory={undoHistory}
           // redoHistory={redoHistory}
         />
@@ -155,6 +161,7 @@ const ShapeCanvas = () => {
                 }}
                 onClick={() => {
                   const newColor = parseColor(color);
+
                   setFinalSelectedColor(newColor);
                 }}
               />
