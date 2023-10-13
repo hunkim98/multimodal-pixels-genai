@@ -3,6 +3,7 @@ import React, { useEffect, useLayoutEffect, useState } from "react";
 import config from "./config";
 import { CanvasContextProvider, canvasContext } from "./canvasContext";
 import updateCanvas from "./updateCanvas";
+import SelectIcon from "@spectrum-icons/workflow/Select";
 import {
   Button,
   Content,
@@ -17,6 +18,7 @@ import {
 import { parseColor } from "@react-stately/color";
 import UndoIcon from "@spectrum-icons/workflow/Undo";
 import RedoIcon from "@spectrum-icons/workflow/Redo";
+import SliceIcon from "@spectrum-icons/workflow/Slice";
 import { ColorWheel } from "@react-spectrum/color";
 
 const Canvas = () => {
@@ -113,24 +115,26 @@ const Canvas = () => {
           </ContextualHelp>
         </Flex>
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
-          {/* <ToggleButton
+          <ToggleButton
             width={"size-600"}
-            isSelected={brushTool === BrushTool.DOT}
             onPress={() => {
               // changeBrushTool(BrushTool.DOT);
             }}
           >
-            <BrushIcon />
+            <SelectIcon />
           </ToggleButton>
           <ToggleButton
-            isSelected={brushTool === BrushTool.ERASER}
+            isSelected={
+              // brushTool === BrushTool.ERASER
+              false
+            }
             width={"size-600"}
             onPress={() => {
-              changeBrushTool(BrushTool.ERASER);
+              // changeBrushTool(BrushTool.ERASER);
             }}
           >
-            <EraserIcon />
-          </ToggleButton> */}
+            <SliceIcon />
+          </ToggleButton>
           <Button
             variant="secondary"
             onPress={() => {
