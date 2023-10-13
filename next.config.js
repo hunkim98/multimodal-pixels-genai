@@ -10,6 +10,8 @@
 //   }/node_modules/canvas/build/Release:${process.env.LD_LIBRARY_PATH || ""}`;
 // }
 
+// when error due to node-canvas please refer to :
+// https://github.com/Automattic/node-canvas/issues/1779
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
