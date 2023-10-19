@@ -4,6 +4,7 @@ import config from "./config";
 import { CanvasContextProvider, canvasContext } from "./canvasContext";
 import updateCanvas from "./updateCanvas";
 import SelectIcon from "@spectrum-icons/workflow/Select";
+import FakeImage from "../fakeImage.png";
 import {
   Button,
   Content,
@@ -25,6 +26,7 @@ const Canvas = () => {
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
   const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
   const { canvas, selectedElement, mode, updated } = canvasState;
+  const [svgCanvas, setSvgCanvas] = useState<any>();
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
@@ -34,6 +36,11 @@ const Canvas = () => {
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
+
+  const canvasBackground = document.getElementById("canvasBackground");
+  if (canvasBackground) {
+    canvasBackground.children[0].setAttribute("fill", "transparent");
+  }
 
   useEffect(() => {
     if (finalSelectedColor) {
@@ -50,6 +57,7 @@ const Canvas = () => {
   const setMode = (newMode: string) =>
     dispatchCanvasState({ type: "mode", mode: newMode });
 
+  const getMode = () => canvas?.getMode();
   const updateContextPanel = () => {
     let elem = canvasState.selectedElement;
     // If element has just been deleted, consider it null
@@ -76,6 +84,7 @@ const Canvas = () => {
     const editorDom = svgcanvasRef.current;
     // Promise.resolve().then(() => {
     const canvas = new SvgCanvas(editorDom, config);
+    setSvgCanvas(canvas);
     updateCanvas(canvas, svgcanvasRef.current, config, true);
     console.log(canvas);
     dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
@@ -96,13 +105,30 @@ const Canvas = () => {
           style={{
             width: "320px",
             height: "320px",
+            position: "relative",
+            background: `linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)), url("fakeImage.png")`,
+            // background: "url(fakeImage.png)",
           }}
         >
           <div
             ref={svgcanvasRef}
             className="svgcanvas"
             style={{ position: "relative" }}
-          />
+          >
+            {/* <img
+              src={"fakeImage.png"}
+              style={{
+                touchAction: "none",
+                pointerEvents: "none",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 320,
+                height: 320,
+                opacity: 0.5,
+              }}
+            /> */}
+          </div>
         </div>
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[250px] h-[320px]">
@@ -184,6 +210,38 @@ const Canvas = () => {
               />
             ))}
           </Flex>
+          <Button
+            variant={"accent"}
+            onPress={() => {
+              if (document.getElementById("svgroot")) {
+                var s = new XMLSerializer().serializeToString(
+                  document.getElementById("svgroot")!,
+                );
+                var encodedData = window.btoa(s);
+                setMode("select");
+                if (mode !== "select") {
+                  alert("선택영역를 선택해제해주시고 시도해주세요");
+                  return;
+                }
+                const base64 = "data:image/svg+xml;base64," + encodedData;
+                const img = new Image();
+                img.src = base64;
+                img.onload = () => {
+                  const canvas = document.createElement("canvas");
+                  const ctx = canvas.getContext("2d");
+                  canvas.width = 320;
+                  canvas.height = 320;
+                  ctx?.drawImage(img, 0, 0);
+                  const a = document.createElement("a");
+                  a.href = canvas.toDataURL("image/png");
+                  a.download = "myImage.png";
+                  a.click();
+                };
+              }
+            }}
+          >
+            download
+          </Button>
         </Flex>
       </div>
     </Flex>
