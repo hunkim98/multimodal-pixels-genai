@@ -114,7 +114,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
       const imgToDraw = new Image();
       imgToDraw.src = imageUrl;
       imgToDraw.onload = () => {
-        ctx.drawImage(imgToDraw, 0, 0);
+        ctx.drawImage(imgToDraw, 0, 0, 512, 512); // expand
         resolve("success");
       };
       imgToDraw.onerror = reject;
@@ -136,8 +136,8 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           var encodedData = window.btoa(s);
           const base64 = "data:image/svg+xml;base64," + encodedData;
           const canvas = document.createElement("canvas");
-          canvas.width = 320;
-          canvas.height = 320;
+          canvas.width = 512;
+          canvas.height = 512;
           const ctx = canvas.getContext("2d")!;
           await drawImage(ctx, base64);
           return canvas.toDataURL("image/png");
