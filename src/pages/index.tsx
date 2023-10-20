@@ -34,13 +34,8 @@ import SketchCanvas from "@/components/SketchCanvas";
 import ShapeCanvas from "@/components/ShapeCanvas";
 import PathCanvas from "@/components/PathCanvas";
 import dynamic from "next/dynamic";
-
-const DynamicComponentWithNoSSR = dynamic(
-  () => import("../components/PathCanvas/Editor"),
-  {
-    ssr: false,
-  },
-);
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,21 +43,47 @@ enum AssistiveImageInputType {
   BRUSH = "brush",
   PIXELS = "pixels",
   SHAPE = "shape",
-  PATH = "PATH",
+  PATH = "path",
+  NULL = "null",
 }
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const imageInputType = searchParams.get("editor");
+  useEffect(() => {
+    console.log(imageInputType);
+    if (imageInputType) {
+      switch (imageInputType) {
+        case AssistiveImageInputType.BRUSH:
+          setIsAssistiveCanvasOpen(true);
+          setSelectedAssistiveImageInputType(AssistiveImageInputType.BRUSH);
+          break;
+        case AssistiveImageInputType.PIXELS:
+          setIsAssistiveCanvasOpen(true);
+          setSelectedAssistiveImageInputType(AssistiveImageInputType.PIXELS);
+          break;
+        case AssistiveImageInputType.SHAPE:
+          setIsAssistiveCanvasOpen(true);
+          setSelectedAssistiveImageInputType(AssistiveImageInputType.SHAPE);
+          break;
+        case AssistiveImageInputType.PATH:
+          setIsAssistiveCanvasOpen(true);
+          setSelectedAssistiveImageInputType(AssistiveImageInputType.PATH);
+          break;
+        default:
+          setIsAssistiveCanvasOpen(false);
+          setSelectedAssistiveImageInputType(AssistiveImageInputType.NULL);
+      }
+    } else {
+      console.log("heys");
+      setIsAssistiveCanvasOpen(false);
+      setSelectedAssistiveImageInputType(AssistiveImageInputType.NULL);
+    }
+  }, [imageInputType]);
   const [isAssistiveCanvasOpen, setIsAssistiveCanvasOpen] = useState(false);
   const [initialPixelDataArray, setInitialPixelDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
   const [initialBrushData, setInitialBrushData] = useState<{
-    canvasHeight: number;
-    canvasWidth: number;
-    canvasLeftTopX: number;
-    canvasLeftTopY: number;
-    data: BrushData;
-  }>();
-  const [initialSketchData, setInitialSketchData] = useState<{
     canvasHeight: number;
     canvasWidth: number;
     canvasLeftTopX: number;
@@ -74,7 +95,7 @@ export default function Home() {
 
   const [isModelActive, setIsModelActive] = useState(false);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
-    useState<AssistiveImageInputType>(AssistiveImageInputType.SHAPE);
+    useState<AssistiveImageInputType>(AssistiveImageInputType.NULL);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
@@ -129,6 +150,27 @@ export default function Home() {
 
   return (
     <main className={`flex min-h-screen flex-col p-24 ${inter.className}`}>
+      <div className="absolute top-0 left-0">
+        <Link href="/">
+          <Button variant="secondary">Basic</Button>
+        </Link>
+
+        <Link href={`?editor=${AssistiveImageInputType.BRUSH}`}>
+          <Button variant="secondary">Brush</Button>
+        </Link>
+
+        <Link href={`?editor=${AssistiveImageInputType.PIXELS}`}>
+          <Button variant="secondary">Pixels</Button>
+        </Link>
+
+        <Link href={`?editor=${AssistiveImageInputType.SHAPE}`}>
+          <Button variant="secondary">Shape</Button>
+        </Link>
+
+        <Link href={`?editor=${AssistiveImageInputType.PATH}`}>
+          <Button variant="secondary">Path</Button>
+        </Link>
+      </div>
       <div className="flex flex-row justify-center align-middle">
         <Flex direction="column" gap="size-100">
           <Flex gap="size-100">
@@ -201,121 +243,123 @@ export default function Home() {
               )}
             </Button>
           </Flex>
-          <div
-            className="z-50"
-            onClick={() => setIsAssistiveCanvasOpen(!isAssistiveCanvasOpen)}
-          >
-            <Checkbox
-              isSelected={isAssistiveCanvasOpen}
-              onChange={setIsAssistiveCanvasOpen}
+          {selectedAsssistivImageInputType !== AssistiveImageInputType.NULL && (
+            <div
+              className="z-50"
+              onClick={() => setIsAssistiveCanvasOpen(!isAssistiveCanvasOpen)}
             >
-              <Text
-                UNSAFE_style={{
-                  fontWeight: "bold",
-                }}
+              <Checkbox
+                isSelected={isAssistiveCanvasOpen}
+                onChange={setIsAssistiveCanvasOpen}
               >
-                Generate Images with supplementary input images
-              </Text>
-            </Checkbox>
-            {isAssistiveCanvasOpen && (
-              <>
-                <Flex gap="size-100" UNSAFE_className="mb-1">
-                  <ToggleButton
-                    isSelected={
-                      selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.SHAPE
-                    }
-                    UNSAFE_style={{
-                      fontWeight: "bold",
-                    }}
-                    onPressChange={() => {
-                      setSelectedAssistiveImageInputType(
-                        AssistiveImageInputType.SHAPE,
-                      );
-                    }}
-                  >
-                    Shape Tool
-                  </ToggleButton>
-                  <ToggleButton
-                    isSelected={
-                      selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.BRUSH
-                    }
-                    UNSAFE_style={{
-                      fontWeight: "bold",
-                    }}
-                    onPressChange={() => {
-                      setSelectedAssistiveImageInputType(
-                        AssistiveImageInputType.BRUSH,
-                      );
-                    }}
-                  >
-                    Color Brush
-                  </ToggleButton>
-                  <ToggleButton
-                    isSelected={
-                      selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.PIXELS
-                    }
-                    UNSAFE_style={{
-                      fontWeight: "bold",
-                    }}
-                    onPressChange={() => {
-                      setSelectedAssistiveImageInputType(
-                        AssistiveImageInputType.PIXELS,
-                      );
-                    }}
-                  >
-                    Pixel Squares
-                  </ToggleButton>
-                  <ToggleButton
-                    isSelected={
-                      selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.PATH
-                    }
-                    UNSAFE_style={{
-                      fontWeight: "bold",
-                    }}
-                    onPressChange={() => {
-                      setSelectedAssistiveImageInputType(
-                        AssistiveImageInputType.PATH,
-                      );
-                    }}
-                  >
-                    Path Tool
-                  </ToggleButton>
-                </Flex>
-                <div
-                  className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
-                  onClick={e => e.stopPropagation()}
+                <Text
+                  UNSAFE_style={{
+                    fontWeight: "bold",
+                  }}
                 >
-                  {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.PIXELS && (
-                    <PixelCanvas
-                      initialData={initialPixelDataArray}
-                      setInitialData={setInitialPixelDataArray}
-                    />
-                  )}
-                  {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.BRUSH && (
-                    <BrushCanvas
-                      canvasWidth={initialBrushData?.canvasWidth}
-                      canvasHeight={initialBrushData?.canvasHeight}
-                      canvasLeftTopX={initialBrushData?.canvasLeftTopX}
-                      canvasLeftTopY={initialBrushData?.canvasLeftTopY}
-                      initData={initialBrushData?.data}
-                      setInitialBrushData={setInitialBrushData}
-                      setBrushCanvasImageBlob={setBrushCanvasImageBlob}
-                    />
-                  )}
-                  {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.SHAPE && <ShapeCanvas />}
-                  {selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.PATH && <PathCanvas />}
-                </div>
+                  Generate Images with supplementary input images
+                </Text>
+              </Checkbox>
+              <>
+                {/* <Flex gap="size-100" UNSAFE_className="mb-1">
+                <ToggleButton
+                  isSelected={
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.SHAPE
+                  }
+                  UNSAFE_style={{
+                    fontWeight: "bold",
+                  }}
+                  onPressChange={() => {
+                    setSelectedAssistiveImageInputType(
+                      AssistiveImageInputType.SHAPE,
+                    );
+                  }}
+                >
+                  Shape Tool
+                </ToggleButton>
+                <ToggleButton
+                  isSelected={
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.BRUSH
+                  }
+                  UNSAFE_style={{
+                    fontWeight: "bold",
+                  }}
+                  onPressChange={() => {
+                    setSelectedAssistiveImageInputType(
+                      AssistiveImageInputType.BRUSH,
+                    );
+                  }}
+                >
+                  Color Brush
+                </ToggleButton>
+                <ToggleButton
+                  isSelected={
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PIXELS
+                  }
+                  UNSAFE_style={{
+                    fontWeight: "bold",
+                  }}
+                  onPressChange={() => {
+                    setSelectedAssistiveImageInputType(
+                      AssistiveImageInputType.PIXELS,
+                    );
+                  }}
+                >
+                  Pixel Squares
+                </ToggleButton>
+                <ToggleButton
+                  isSelected={
+                    selectedAsssistivImageInputType ===
+                    AssistiveImageInputType.PATH
+                  }
+                  UNSAFE_style={{
+                    fontWeight: "bold",
+                  }}
+                  onPressChange={() => {
+                    setSelectedAssistiveImageInputType(
+                      AssistiveImageInputType.PATH,
+                    );
+                  }}
+                >
+                  Path Tool
+                </ToggleButton>
+              </Flex> */}
+                {isAssistiveCanvasOpen && (
+                  <div
+                    className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.PIXELS && (
+                      <PixelCanvas
+                        initialData={initialPixelDataArray}
+                        setInitialData={setInitialPixelDataArray}
+                      />
+                    )}
+                    {selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.BRUSH && (
+                      <BrushCanvas
+                        canvasWidth={initialBrushData?.canvasWidth}
+                        canvasHeight={initialBrushData?.canvasHeight}
+                        canvasLeftTopX={initialBrushData?.canvasLeftTopX}
+                        canvasLeftTopY={initialBrushData?.canvasLeftTopY}
+                        initData={initialBrushData?.data}
+                        setInitialBrushData={setInitialBrushData}
+                        setBrushCanvasImageBlob={setBrushCanvasImageBlob}
+                      />
+                    )}
+                    {selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.SHAPE && <ShapeCanvas />}
+                    {selectedAsssistivImageInputType ===
+                      AssistiveImageInputType.PATH && <PathCanvas />}
+                  </div>
+                )}
               </>
-            )}
-          </div>
+            </div>
+          )}
         </Flex>
       </div>
       <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">

@@ -17,6 +17,7 @@ export interface ShapeEditorRef {
   redo: () => void;
   colorSelectedShape: (color: string) => void;
   recordInHistory: () => void;
+  getBase64Image: () => string | undefined;
 }
 
 const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
@@ -52,6 +53,14 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     fabricRef.current?.loadFromJSON(lastState, function () {
       fabricRef.current?.renderAll();
     });
+  };
+
+  const getBase64Image = () => {
+    const dataURL = fabricRef.current?.toDataURL({
+      format: "png",
+    });
+
+    return dataURL;
   };
 
   const recordInHistory = () => {
@@ -276,8 +285,9 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       redo,
       colorSelectedShape,
       recordInHistory,
+      getBase64Image,
     }),
-    [undo, redo, colorSelectedShape, recordInHistory],
+    [undo, redo, colorSelectedShape, recordInHistory, getBase64Image],
   );
 
   return (

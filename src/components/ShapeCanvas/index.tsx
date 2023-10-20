@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { fabric } from "fabric";
 import {
   Button,
@@ -22,6 +22,7 @@ import { ColorWheel } from "@react-spectrum/color";
 import { parseColor } from "@react-stately/color";
 import Editor, { ShapeEditorRef } from "./Editor";
 import { TriangleIcon } from "./icons";
+import { ImageContext } from "../context/ImageContext";
 
 const ShapeCanvas = () => {
   const fabricRef = React.useRef<fabric.Canvas>();
@@ -44,6 +45,8 @@ const ShapeCanvas = () => {
   const [shapeType, setShapeType] = useState<
     "rect" | "ellipse" | "triangle" | undefined
   >(undefined);
+
+  const { setBase64Image } = useContext(ImageContext);
 
   return (
     <Flex direction="row" gap="size-100">
@@ -161,13 +164,21 @@ const ShapeCanvas = () => {
                 }}
                 onClick={() => {
                   const newColor = parseColor(color);
-
                   setFinalSelectedColor(newColor);
                 }}
               />
             ))}
           </Flex>
         </Flex>
+        <Button
+          variant="cta"
+          onPress={() => {
+            const imageBase = editorRef.current?.getBase64Image();
+            console.log(imageBase);
+          }}
+        >
+          download
+        </Button>
       </div>
     </Flex>
   );
