@@ -165,7 +165,6 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
     ref,
     () => ({
       getBase64Image: async () => {
-        console.log(dataArray);
         const base64 = await blobToBase64(
           createImageOutOfNestedColorArray(dataArray),
         );

@@ -19,7 +19,14 @@ import {
 import { PixelModifyItem } from "dotting";
 import { parseColor } from "@react-stately/color";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  LegacyRef,
+  Ref,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ColorWheel } from "@react-spectrum/color";
 import { ModelInputs } from "@/types/replicate";
 import axios from "axios";
@@ -32,11 +39,11 @@ import PixelCanvas from "@/components/PixelCanvas/PixelCanvas";
 import { BrushData } from "@/components/BrushCanvas/Editor";
 import SketchCanvas from "@/components/SketchCanvas";
 import ShapeCanvas from "@/components/ShapeCanvas";
-import PathCanvas from "@/components/PathCanvas";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ImageExportRef } from "@/types/imageExportRef";
+import { CanvasContextProvider } from "@/components/PathCanvas/canvasContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -47,6 +54,23 @@ enum AssistiveImageInputType {
   PATH = "path",
   NULL = "null",
 }
+
+const PathCanvas = dynamic(
+  async () => {
+    const { default: PathCanvas } = await import(
+      "../components/PathCanvas/Editor"
+    );
+    const PathCanvasComponent = ({
+      forwardedRef,
+    }: {
+      forwardedRef: Ref<ImageExportRef>;
+    }) => {
+      return <PathCanvas ref={forwardedRef} />;
+    };
+    return PathCanvasComponent;
+  },
+  { ssr: false },
+);
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -368,7 +392,11 @@ export default function Home() {
                       <ShapeCanvas ref={imageExportUtilRef} />
                     )}
                     {selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.PATH && <PathCanvas />}
+                      AssistiveImageInputType.PATH && (
+                      <CanvasContextProvider>
+                        <PathCanvas forwardedRef={imageExportUtilRef} />
+                      </CanvasContextProvider>
+                    )}
                   </div>
                 )}
               </>

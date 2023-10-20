@@ -1,5 +1,11 @@
 import SvgCanvas from "@svgedit/svgcanvas";
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useState,
+} from "react";
 import config from "./config";
 import { CanvasContextProvider, canvasContext } from "./canvasContext";
 import updateCanvas from "./updateCanvas";
@@ -21,8 +27,12 @@ import UndoIcon from "@spectrum-icons/workflow/Undo";
 import RedoIcon from "@spectrum-icons/workflow/Redo";
 import SliceIcon from "@spectrum-icons/workflow/Slice";
 import { ColorWheel } from "@react-spectrum/color";
+import { ImageExportRef } from "@/types/imageExportRef";
 
-const Canvas = () => {
+const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
+  {},
+  ref: React.ForwardedRef<ImageExportRef>,
+) {
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
   const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
   const { canvas, selectedElement, mode, updated } = canvasState;
@@ -40,6 +50,7 @@ const Canvas = () => {
   const canvasBackground = document.getElementById("canvasBackground");
   if (canvasBackground) {
     canvasBackground.children[0].setAttribute("fill", "transparent");
+    canvasBackground.children[0].setAttribute("stroke", "transparent");
   }
 
   useEffect(() => {
@@ -57,7 +68,6 @@ const Canvas = () => {
   const setMode = (newMode: string) =>
     dispatchCanvasState({ type: "mode", mode: newMode });
 
-  const getMode = () => canvas?.getMode();
   const updateContextPanel = () => {
     let elem = canvasState.selectedElement;
     // If element has just been deleted, consider it null
@@ -97,6 +107,46 @@ const Canvas = () => {
     };
   }, []);
   updateContextPanel();
+
+  const drawImage = async (ctx: CanvasRenderingContext2D, imageUrl: string) => {
+    // return a Promise synchronously
+    return new Promise((resolve, reject) => {
+      const imgToDraw = new Image();
+      imgToDraw.src = imageUrl;
+      imgToDraw.onload = () => {
+        ctx.drawImage(imgToDraw, 0, 0);
+        resolve("success");
+      };
+      imgToDraw.onerror = reject;
+    });
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getBase64Image: async () => {
+        if (canvas?.getMode() !== "select") {
+          alert("선택영역를 선택해제해주시고 시도해주세요");
+          return;
+        }
+        if (document.getElementById("svgroot")) {
+          var s = new XMLSerializer().serializeToString(
+            document.getElementById("svgroot")!,
+          );
+          var encodedData = window.btoa(s);
+          const base64 = "data:image/svg+xml;base64," + encodedData;
+          const canvas = document.createElement("canvas");
+          canvas.width = 320;
+          canvas.height = 320;
+          const ctx = canvas.getContext("2d")!;
+          await drawImage(ctx, base64);
+          return canvas.toDataURL("image/png");
+        }
+        return "";
+      },
+    }),
+    [svgCanvas, setMode, canvas],
+  );
   return (
     <Flex direction="row" gap="size-100">
       <div className="OIe-editor" role="main">
@@ -106,8 +156,9 @@ const Canvas = () => {
             width: "320px",
             height: "320px",
             position: "relative",
-            background: `linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)), url("fakeImage.png")`,
-            // background: "url(fakeImage.png)",
+            border: "0.5px solid black",
+
+            // background: `linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)), url("fakeImage.png")`,
           }}
         >
           <div
@@ -210,50 +261,33 @@ const Canvas = () => {
               />
             ))}
           </Flex>
-          <Button
-            variant={"accent"}
-            onPress={() => {
-              if (document.getElementById("svgroot")) {
-                var s = new XMLSerializer().serializeToString(
-                  document.getElementById("svgroot")!,
-                );
-                var encodedData = window.btoa(s);
-                setMode("select");
-                if (mode !== "select") {
-                  alert("선택영역를 선택해제해주시고 시도해주세요");
-                  return;
-                }
-                const base64 = "data:image/svg+xml;base64," + encodedData;
-                const img = new Image();
-                img.src = base64;
-                img.onload = () => {
-                  const canvas = document.createElement("canvas");
-                  const ctx = canvas.getContext("2d");
-                  canvas.width = 320;
-                  canvas.height = 320;
-                  ctx?.drawImage(img, 0, 0);
-                  const a = document.createElement("a");
-                  a.href = canvas.toDataURL("image/png");
-                  a.download = "myImage.png";
-                  a.click();
-                };
-              }
-            }}
-          >
-            download
-          </Button>
         </Flex>
       </div>
     </Flex>
   );
-};
+});
 
-const CanvasWithContext = (props: any) => (
-  <CanvasContextProvider>
-    <Canvas {...props} />
-  </CanvasContextProvider>
-);
+// const CanvasWithContext = forwardRef<ImageExportRef, any>(function (
+//   props,
+//   ref: React.ForwardedRef<ImageExportRef>,
+// ) {
+//   useImperativeHandle(
+//     ref,
+//     () => ({
+//       getBase64Image: async () => {
+//         console.log("hey");
+//         return "";
+//       },
+//     }),
+//     [],
+//   );
+//   return (
+//     <CanvasContextProvider>
+//       <PathCanvas {...props} ref={ref} />
+//     </CanvasContextProvider>
+//   );
+// });
 
-export default CanvasWithContext;
+export default PathCanvas;
 
 // export default DynamicPathCanvas;
