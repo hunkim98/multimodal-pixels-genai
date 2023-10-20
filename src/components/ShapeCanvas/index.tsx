@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, {
+  forwardRef,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from "react";
 import { fabric } from "fabric";
 import {
   Button,
@@ -23,8 +29,12 @@ import { parseColor } from "@react-stately/color";
 import Editor, { ShapeEditorRef } from "./Editor";
 import { TriangleIcon } from "./icons";
 import { ImageContext } from "../context/ImageContext";
+import { ImageExportRef } from "@/types/imageExportRef";
 
-const ShapeCanvas = () => {
+const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
+  {},
+  ref: React.ForwardedRef<ImageExportRef>,
+) {
   const fabricRef = React.useRef<fabric.Canvas>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const editorRef = React.useRef<ShapeEditorRef>(null);
@@ -46,7 +56,15 @@ const ShapeCanvas = () => {
     "rect" | "ellipse" | "triangle" | undefined
   >(undefined);
 
-  const { setBase64Image } = useContext(ImageContext);
+  useImperativeHandle(
+    ref,
+    () => ({
+      getBase64Image: () => {
+        return editorRef.current?.getBase64Image();
+      },
+    }),
+    [editorRef.current],
+  );
 
   return (
     <Flex direction="row" gap="size-100">
@@ -182,6 +200,6 @@ const ShapeCanvas = () => {
       </div>
     </Flex>
   );
-};
+});
 
 export default ShapeCanvas;

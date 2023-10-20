@@ -36,6 +36,7 @@ import PathCanvas from "@/components/PathCanvas";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ImageExportRef } from "@/types/imageExportRef";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -94,6 +95,7 @@ export default function Home() {
   const [sketchCanvasImageBlob, setSketchCanvasImageBlob] = useState<Blob>();
 
   const [isModelActive, setIsModelActive] = useState(false);
+  const imageExportUtilRef = useRef<ImageExportRef>(null);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
     useState<AssistiveImageInputType>(AssistiveImageInputType.NULL);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
@@ -192,44 +194,51 @@ export default function Home() {
               alignSelf={"end"}
               onPress={() => {
                 setIsModelActive(true);
-                if (!isAssistiveCanvasOpen) {
-                  generateImages();
-                } else {
-                  if (
-                    selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.PIXELS
-                  ) {
-                    if (initialPixelDataArray) {
-                      blobToBase64(
-                        createImageOutOfNestedColorArray(initialPixelDataArray),
-                      )
-                        .then(base64String => {
-                          generateImages(base64String as string);
-                        })
-                        .catch(err => {
-                          setIsModelActive(false);
-                        });
-                      return;
-                    }
-                  }
-                  if (
-                    selectedAsssistivImageInputType ===
-                    AssistiveImageInputType.BRUSH
-                  ) {
-                    if (brushCanvasImageBlob) {
-                      blobToBase64(brushCanvasImageBlob)
-                        .then(base64String => {
-                          generateImages(base64String as string);
-                        })
-                        .catch(err => {
-                          setIsModelActive(false);
-                        });
-                      return;
-                    }
-                  }
-                  generateImages();
+                const base64 = imageExportUtilRef.current?.getBase64Image();
+                if (base64) {
+                  //download
+                  const a = document.createElement("a");
+                  a.href = base64;
+                  a.download = "myImage.png";
+                  a.click();
                 }
-                // setIsAssistiveCanvasOpen(false);
+                // if (!isAssistiveCanvasOpen) {
+                //   generateImages();
+                // } else {
+                //   if (
+                //     selectedAsssistivImageInputType ===
+                //     AssistiveImageInputType.PIXELS
+                //   ) {
+                //     if (initialPixelDataArray) {
+                //       blobToBase64(
+                //         createImageOutOfNestedColorArray(initialPixelDataArray),
+                //       )
+                //         .then(base64String => {
+                //           generateImages(base64String as string);
+                //         })
+                //         .catch(err => {
+                //           setIsModelActive(false);
+                //         });
+                //       return;
+                //     }
+                //   }
+                //   if (
+                //     selectedAsssistivImageInputType ===
+                //     AssistiveImageInputType.BRUSH
+                //   ) {
+                //     if (brushCanvasImageBlob) {
+                //       blobToBase64(brushCanvasImageBlob)
+                //         .then(base64String => {
+                //           generateImages(base64String as string);
+                //         })
+                //         .catch(err => {
+                //           setIsModelActive(false);
+                //         });
+                //       return;
+                //     }
+                //   }
+                //   generateImages();
+                // }
               }}
             >
               {isModelActive ? (
@@ -352,7 +361,9 @@ export default function Home() {
                       />
                     )}
                     {selectedAsssistivImageInputType ===
-                      AssistiveImageInputType.SHAPE && <ShapeCanvas />}
+                      AssistiveImageInputType.SHAPE && (
+                      <ShapeCanvas ref={imageExportUtilRef} />
+                    )}
                     {selectedAsssistivImageInputType ===
                       AssistiveImageInputType.PATH && <PathCanvas />}
                   </div>
