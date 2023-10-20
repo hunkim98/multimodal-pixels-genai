@@ -360,6 +360,7 @@ export default function Home() {
                         initData={initialBrushData?.data}
                         setInitialBrushData={setInitialBrushData}
                         setBrushCanvasImageBlob={setBrushCanvasImageBlob}
+                        ref={imageExportUtilRef}
                       />
                     )}
                     {selectedAsssistivImageInputType ===
