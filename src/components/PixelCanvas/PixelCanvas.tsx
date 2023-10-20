@@ -21,7 +21,13 @@ import {
   useDotting,
   useHandlers,
 } from "dotting";
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   brushSizeFive,
   brushSizeFour,
@@ -36,6 +42,8 @@ import UndoIcon from "@spectrum-icons/workflow/Undo";
 import RedoIcon from "@spectrum-icons/workflow/Redo";
 import { ColorWheel } from "@react-spectrum/color";
 import { CreateEmptySquareData } from "@/utils/dataCreator";
+import { ImageExportRef } from "@/types/imageExportRef";
+import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
 
 interface Props {
   initialData?: Array<Array<PixelModifyItem>>;
@@ -43,7 +51,10 @@ interface Props {
     React.SetStateAction<Array<Array<PixelModifyItem>> | undefined>
   >;
 }
-function PixelCanvas({ initialData, setInitialData }: Props) {
+const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
+  { initialData, setInitialData },
+  ref: React.ForwardedRef<ImageExportRef>,
+) {
   const dottingRef = useRef<DottingRef>(null);
   const [isGridVisible, setIsGridVisible] = useState(false);
   const { clear, undo, redo } = useDotting(dottingRef);
@@ -58,6 +69,10 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
   );
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
+  );
+
+  const [dataArray, setDataArray] = useState<Array<Array<PixelModifyItem>>>(
+    initialData ?? [],
   );
 
   const {
@@ -94,6 +109,7 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
         tempArray.push(row);
       }
       setInitialData(tempArray);
+      setDataArray(tempArray);
     };
     addDataChangeListener(dataChangeListener);
   }, [setInitialData, addDataChangeListener]);
@@ -144,6 +160,20 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
   useEffect(() => {
     changeBrushColor(finalSelectedColor.toString("hex"));
   }, [finalSelectedColor, changeBrushColor]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getBase64Image: async () => {
+        console.log(dataArray);
+        const base64 = await blobToBase64(
+          createImageOutOfNestedColorArray(dataArray),
+        );
+        return base64 as string;
+      },
+    }),
+    [dottingRef.current, dataArray],
+  );
 
   return (
     <Flex direction="row" gap="size-100">
@@ -274,6 +304,6 @@ function PixelCanvas({ initialData, setInitialData }: Props) {
       </div>
     </Flex>
   );
-}
+});
 
 export default PixelCanvas;

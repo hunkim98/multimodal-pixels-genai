@@ -1,3 +1,3 @@
 export interface ImageExportRef {
-  getBase64Image: () => string | undefined;
+  getBase64Image: () => Promise<string | undefined>;
 }

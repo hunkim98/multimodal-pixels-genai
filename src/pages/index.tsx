@@ -192,9 +192,10 @@ export default function Home() {
               }}
               isDisabled={isModelActive}
               alignSelf={"end"}
-              onPress={() => {
+              onPress={async () => {
                 setIsModelActive(true);
-                const base64 = imageExportUtilRef.current?.getBase64Image();
+                const base64 =
+                  await imageExportUtilRef.current?.getBase64Image();
                 if (base64) {
                   //download
                   const a = document.createElement("a");
@@ -344,6 +345,7 @@ export default function Home() {
                     {selectedAsssistivImageInputType ===
                       AssistiveImageInputType.PIXELS && (
                       <PixelCanvas
+                        ref={imageExportUtilRef}
                         initialData={initialPixelDataArray}
                         setInitialData={setInitialPixelDataArray}
                       />

@@ -59,7 +59,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   useImperativeHandle(
     ref,
     () => ({
-      getBase64Image: () => {
+      getBase64Image: async () => {
         return editorRef.current?.getBase64Image();
       },
     }),
