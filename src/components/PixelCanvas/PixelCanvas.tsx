@@ -57,7 +57,13 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
 ) {
   const dottingRef = useRef<DottingRef>(null);
   const [isGridVisible, setIsGridVisible] = useState(false);
-  const { clear, undo, redo } = useDotting(dottingRef);
+  const {
+    clear,
+    undo,
+    redo,
+    getBackgroundCanvas,
+    convertWorldPosToCanvasOffset,
+  } = useDotting(dottingRef);
   const { changeBrushColor, changeBrushTool, changeBrushPattern, brushTool } =
     useBrush(dottingRef);
   const [brushSize, setBrushSize] = useState(1);
@@ -194,6 +200,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
           style={{
             border: "0.5px solid black",
           }}
+          initAutoScale={false}
         />
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[250px] h-[320px]">

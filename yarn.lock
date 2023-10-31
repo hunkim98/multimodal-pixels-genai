@@ -3175,10 +3175,10 @@ domexception@^4.0.0:
   dependencies:
     webidl-conversions "^7.0.0"
 
-dotting@^2.0.13:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/dotting/-/dotting-2.1.0.tgz#82d2c42bef8f2f727e6868c35313478e3089534d"
-  integrity sha512-DoLcuo4keLy1bGjQe3kcqH8pQvlA+i+Ud5i6G8yzRZ/jEsR2tf/uzTwLWz+NkVFfWP99VlN1nZWfKhN7AbPJ2g==
+dotting@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/dotting/-/dotting-2.1.2.tgz#e2014a882e954fe6b11ac2347655fc391bea41e6"
+  integrity sha512-JU1vtHB7qvK2mX+loIPEL1Qf+iOPuuTgM4bsyBtV3GV7LxUoREXY1YWcIrtFzrYYZmDUkgujuFDpLotpNdvcoA==
 
 electron-to-chromium@^1.4.535:
   version "1.4.559"

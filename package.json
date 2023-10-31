@@ -19,7 +19,7 @@
     "autoprefixer": "10.4.14",
     "axios": "^1.4.0",
     "canvas": "2.8.0",
-    "dotting": "^2.0.13",
+    "dotting": "^2.1.2",
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.13",
     "fabric": "^5.3.0",
