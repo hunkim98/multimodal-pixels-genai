@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 import config from "./config";
@@ -37,6 +38,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
   const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
   const { canvas, selectedElement, mode, updated } = canvasState;
+
   const [svgCanvas, setSvgCanvas] = useState<any>();
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
@@ -44,11 +46,11 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const [finalSelectedColor, setFinalSelectedColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
+  const [isElementSelected, setIsElementSelected] = useState(false);
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
   const { imageUrlToEdit } = React.useContext(ImageContext);
-
   const canvasBackground = document.getElementById("canvasBackground");
   if (canvasBackground) {
     canvasBackground.children[0].setAttribute("fill", "transparent");
@@ -63,9 +65,26 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         colorType: "fill",
         color: color,
       });
+      if (isElementSelected) {
+        setRecentlyUsedColors(prev => {
+          const newSet = new Set(prev);
+          newSet.add(color);
+          return newSet;
+        });
+      }
       dispatchCanvasState({ type: "color", colorType: "stroke", color });
     }
-  }, [finalSelectedColor, dispatchCanvasState]);
+  }, [finalSelectedColor, dispatchCanvasState, isElementSelected]);
+
+  useEffect(() => {
+    if (selectedElement) {
+      setRecentlyUsedColors(prev => {
+        const newSet = new Set(prev);
+        newSet.add(selectedElement.getAttribute("fill")!);
+        return newSet;
+      });
+    }
+  }, [selectedElement, finalSelectedColor]);
 
   const setMode = (newMode: string) =>
     dispatchCanvasState({ type: "mode", mode: newMode });
@@ -142,7 +161,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     ref,
     () => ({
       getBase64Image: async () => {
-        if (canvas?.getMode() !== "select") {
+        if (canvas?.currentMode !== "select") {
           alert("선택영역를 선택해제해주시고 시도해주세요");
           return;
         }
@@ -195,6 +214,22 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           <div
             ref={svgcanvasRef}
             className="svgcanvas"
+            onMouseDown={evt => {
+              const target = canvas?.getMouseTarget(evt);
+              if (target?.tagName === "path") {
+                setIsElementSelected(true);
+              } else {
+                setIsElementSelected(false);
+              }
+              console.log(canvas?.drawnPath);
+              if (canvas?.drawnPath) {
+                setRecentlyUsedColors(prev => {
+                  const newSet = new Set(prev);
+                  newSet.add(finalSelectedColor.toString("hex"));
+                  return newSet;
+                });
+              }
+            }}
             style={{ position: "relative" }}
           ></div>
         </div>
@@ -215,18 +250,21 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}
-            isSelected={mode !== "path"}
+            isSelected={canvas?.currentMode !== "path"}
             onPress={() => {
-              setMode("select");
+              dispatchCanvasState({ type: "mode", mode: "select" });
+              setIsElementSelected(false);
+              // setMode("select");
             }}
           >
             <SelectIcon />
           </ToggleButton>
           <ToggleButton
-            isSelected={mode === "path"}
+            isSelected={canvas?.currentMode === "path"}
             width={"size-600"}
             onPress={() => {
-              setMode("path");
+              dispatchCanvasState({ type: "mode", mode: "path" });
+              // setMode("path");
               // changeBrushTool(BrushTool.ERASER);
             }}
           >

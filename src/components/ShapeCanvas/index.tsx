@@ -104,6 +104,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           ref={editorRef}
           shapeType={shapeType}
           color={finalSelectedColor.toString("hex")}
+          setRecentlyUsedColors={setRecentlyUsedColors}
           // undoHistory={undoHistory}
           // redoHistory={redoHistory}
         />

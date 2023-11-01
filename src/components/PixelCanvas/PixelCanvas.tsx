@@ -67,7 +67,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
     getBackgroundCanvas,
     convertWorldPosToCanvasOffset,
   } = useDotting(dottingRef);
-  const { changeBrushColor, changeBrushTool, changeBrushPattern, brushTool } =
+  const { changeBrushTool, changeBrushPattern, brushTool } =
     useBrush(dottingRef);
   const [brushSize, setBrushSize] = useState(1);
   const [changingColor, setChangingColor] = useState(
@@ -195,10 +195,6 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
     }
   }, [brushSize, changeBrushPattern]);
 
-  useEffect(() => {
-    changeBrushColor(finalSelectedColor.toString("hex"));
-  }, [finalSelectedColor, changeBrushColor]);
-
   useImperativeHandle(
     ref,
     () => ({
@@ -220,6 +216,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
           width={320}
           height={320}
           isGridFixed={true}
+          brushColor={finalSelectedColor.toString("hex")}
           initLayers={[
             {
               id: "default",

@@ -12,6 +12,7 @@ import { ImageContext } from "../context/ImageContext";
 
 interface Props {
   shapeType: "rect" | "ellipse" | "triangle" | undefined;
+  setRecentlyUsedColors: React.Dispatch<React.SetStateAction<Set<string>>>;
   color: string;
 }
 export interface ShapeEditorRef {
@@ -23,7 +24,7 @@ export interface ShapeEditorRef {
 }
 
 const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
-  { shapeType, color },
+  { shapeType, color, setRecentlyUsedColors },
   ref: ForwardedRef<ShapeEditorRef>,
 ) {
   const { imageUrlToEdit } = useContext(ImageContext);
@@ -40,7 +41,10 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   const [redoHistory, setRedoHistory] = useState<string[]>([]);
   const undo = () => {
     const lastState = undoHistory[undoHistory.length - 1];
-    if (!lastState) return;
+    if (!lastState) {
+      fabricRef.current?.clear();
+      return;
+    }
     setUndoHistory(undoHistory.slice(0, undoHistory.length - 1));
     setRedoHistory([...redoHistory, lastState]);
     fabricRef.current?.loadFromJSON(lastState, function () {
@@ -76,10 +80,14 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
 
   const colorSelectedShape = (color: string) => {
     const activeObject = fabricRef.current?.getActiveObject();
-    console.log(color, activeObject);
     if (activeObject) {
       activeObject.set("fill", color);
       fabricRef.current?.renderAll();
+      setRecentlyUsedColors(prev => {
+        const newSet = new Set(prev);
+        newSet.add(color);
+        return newSet;
+      });
     }
   };
   useEffect(() => {
@@ -259,7 +267,12 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
 
       if (shouldRecordInHistory) {
         const state = JSON.stringify(fabricRef.current?.toJSON());
-        console.log(undoHistory.length);
+
+        setRecentlyUsedColors(prev => {
+          const newSet = new Set(prev);
+          newSet.add(color);
+          return newSet;
+        });
 
         setUndoHistory(prev => {
           return [...prev, state];
