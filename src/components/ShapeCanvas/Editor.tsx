@@ -105,6 +105,16 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
           fabricRef.current?.remove(activeObject);
         }
       }
+      if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+        const activeObject = fabricRef.current?.getActiveObject();
+        if (activeObject) {
+          activeObject.clone((cloned: any) => {});
+        }
+        // canvas?.cloneSelectedElements(5, 5);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+        // canvas?.cloneSelectedElements(5, 5);
+      }
     };
 
     // const addRectangle = () => {

@@ -48,6 +48,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   useEffect(() => {
     const newColor = finalSelectedColor;
     editorRef.current?.colorSelectedShape(newColor.toString("hex"));
+
     editorRef.current?.recordInHistory();
   }, [finalSelectedColor]);
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(

@@ -37,7 +37,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
 ) {
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
   const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
-  const { canvas, selectedElement, mode, updated } = canvasState;
+  const { canvas, mode, updated } = canvasState;
 
   const [svgCanvas, setSvgCanvas] = useState<any>();
   const [changingColor, setChangingColor] = useState(
@@ -47,6 +47,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     parseColor("hsl(50, 100%, 50%)"),
   );
   const [isElementSelected, setIsElementSelected] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<any>(null);
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
@@ -56,25 +57,48 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     canvasBackground.children[0].setAttribute("fill", "transparent");
     canvasBackground.children[0].setAttribute("stroke", "transparent");
   }
+  const [copiedElements, setCopiedElements] = useState<any[]>([]);
+  const [realMode, setRealMode] = useState("path");
+
+  useEffect(() => {
+    const modeListener = setInterval(() => {
+      console.log(canvas?.currentMode);
+      setRealMode(canvas?.currentMode);
+    }, 500);
+    return () => {
+      clearInterval(modeListener);
+    };
+  }, [canvas]);
 
   useEffect(() => {
     if (finalSelectedColor) {
       const color = finalSelectedColor.toString("hex");
-      dispatchCanvasState({
-        type: "color",
-        colorType: "fill",
-        color: color,
-      });
-      if (isElementSelected) {
+      if (selectedElement) {
+        // dispatchCanvasState({
+        //   type: "color",
+        //   colorType: "fill",
+        //   color: color,
+        // });
+        selectedElement.setAttribute("fill", color);
         setRecentlyUsedColors(prev => {
           const newSet = new Set(prev);
           newSet.add(color);
           return newSet;
         });
       }
+      dispatchCanvasState({
+        type: "color",
+        colorType: "fill",
+        color: color,
+      });
       dispatchCanvasState({ type: "color", colorType: "stroke", color });
     }
-  }, [finalSelectedColor, dispatchCanvasState, isElementSelected]);
+  }, [
+    finalSelectedColor,
+    dispatchCanvasState,
+    isElementSelected,
+    selectedElement,
+  ]);
 
   useEffect(() => {
     if (selectedElement) {
@@ -119,15 +143,24 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
       if ((e.ctrlKey || e.metaKey) && e.key === "y") {
         canvas.undoMgr.redo();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+        setCopiedElements(canvas?.selectedElements);
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === "v") {
-        canvas?.cloneSelectedElements(5, 5);
+        if (copiedElements.length !== 0) {
+          canvas?.clearSelection();
+          canvas?.addToSelection(copiedElements);
+          canvas?.cloneSelectedElements(5, 5);
+          // canvas?.pasteElements(canvas?.selectedElements, 0, 0);
+          console.log("pasted!");
+        }
       }
     };
     window.addEventListener("keydown", keyDownListener);
     return () => {
       window.removeEventListener("keydown", keyDownListener);
     };
-  }, [canvas]);
+  }, [canvas, copiedElements]);
 
   useLayoutEffect(() => {
     const editorDom = svgcanvasRef.current;
@@ -163,7 +196,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     ref,
     () => ({
       getBase64Image: async () => {
-        if (canvas?.currentMode !== "select") {
+        if (realMode !== "select") {
           alert("선택영역를 선택해제해주시고 시도해주세요");
           return;
         }
@@ -220,8 +253,13 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
               const target = canvas?.getMouseTarget(evt);
               if (target?.tagName === "path") {
                 setIsElementSelected(true);
+                setSelectedElement(target);
+                const fillColor = parseColor(target.getAttribute("fill")!);
+                console.log(target.getAttribute("fill"));
+                setFinalSelectedColor(fillColor);
               } else {
                 setIsElementSelected(false);
+                setSelectedElement(null);
               }
               if (canvas?.drawnPath) {
                 setRecentlyUsedColors(prev => {
@@ -251,7 +289,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
           <ToggleButton
             width={"size-600"}
-            isSelected={canvas?.currentMode !== "path"}
+            isSelected={realMode !== "path"}
             onPress={() => {
               dispatchCanvasState({ type: "mode", mode: "select" });
               setIsElementSelected(false);
@@ -261,7 +299,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             <SelectIcon />
           </ToggleButton>
           <ToggleButton
-            isSelected={canvas?.currentMode === "path"}
+            isSelected={realMode === "path"}
             width={"size-600"}
             onPress={() => {
               dispatchCanvasState({ type: "mode", mode: "path" });
