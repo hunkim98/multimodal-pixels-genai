@@ -131,6 +131,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const onKeyDown = (event: any) => {
     if (event.key === "Backspace" && event.target.tagName !== "INPUT") {
       event.preventDefault();
+      event.stopPropagation();
       dispatchCanvasState({ type: "deleteSelectedElements" });
     }
   };

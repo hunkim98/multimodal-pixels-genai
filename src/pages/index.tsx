@@ -429,8 +429,8 @@ export default function Home() {
                 UNSAFE_className="bg-white"
                 UNSAFE_style={{
                   position: "absolute",
-                  bottom: 25,
-                  right: -10,
+                  top: 5,
+                  left: 5,
                   color: "#fff",
                 }}
                 onPress={() => {
