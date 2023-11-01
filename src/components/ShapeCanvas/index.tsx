@@ -67,6 +67,21 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     [editorRef.current],
   );
 
+  useEffect(() => {
+    const keyDownListener = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        editorRef.current?.undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+        editorRef.current?.redo();
+      }
+    };
+    window.addEventListener("keydown", keyDownListener);
+    return () => {
+      window.removeEventListener("keydown", keyDownListener);
+    };
+  }, [editorRef.current]);
+
   return (
     <Flex direction="row" gap="size-100">
       <div className="w-[320px] h-[320px] relative">

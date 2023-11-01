@@ -92,6 +92,21 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     }
   };
 
+  useEffect(() => {
+    const keyDownListener = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+        canvas.undoMgr.undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+        canvas.undoMgr.redo();
+      }
+    };
+    window.addEventListener("keydown", keyDownListener);
+    return () => {
+      window.removeEventListener("keydown", keyDownListener);
+    };
+  }, [canvas]);
+
   useLayoutEffect(() => {
     const editorDom = svgcanvasRef.current;
     // Promise.resolve().then(() => {
