@@ -119,6 +119,9 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
       if ((e.ctrlKey || e.metaKey) && e.key === "y") {
         canvas.undoMgr.redo();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+        canvas?.cloneSelectedElements(5, 5);
+      }
     };
     window.addEventListener("keydown", keyDownListener);
     return () => {
@@ -138,7 +141,6 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     document.addEventListener("keydown", onKeyDown.bind(canvas));
     return () => {
       // cleanup function
-      console.log("cleanup");
       document.removeEventListener("keydown", onKeyDown.bind(canvas));
     };
   }, []);
@@ -221,7 +223,6 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
               } else {
                 setIsElementSelected(false);
               }
-              console.log(canvas?.drawnPath);
               if (canvas?.drawnPath) {
                 setRecentlyUsedColors(prev => {
                   const newSet = new Set(prev);
