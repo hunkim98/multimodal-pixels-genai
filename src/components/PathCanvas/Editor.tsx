@@ -63,7 +63,16 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   useEffect(() => {
     if (!svgCanvas) return;
     if (imageUrlToEdit) {
-      svgCanvas.clear();
+      // svgCanvas.clear();
+      const elements = svgCanvas.getVisibleElements();
+      svgCanvas.addToSelection(elements);
+      svgCanvas.deleteSelectedElements();
+      dispatchCanvasState({ type: "mode", mode: "select" });
+
+      for (const element of elements) {
+        console.log(element.getAttribute("id"));
+        const id = element.getAttribute("id");
+      }
     }
   }, [imageUrlToEdit, svgCanvas]);
 
@@ -228,7 +237,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   );
   return (
     <Flex direction="row" gap="size-100">
-      <div className="OIe-editor" role="main">
+      <div className="OIe-editor relative" role="main">
         <div
           className="workarea"
           style={{
@@ -236,7 +245,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             height: "320px",
             position: "relative",
             border: "0.5px solid black",
-
+            // background: imageUrlToEdit ? `url(${imageUrlToEdit})` : undefined,
             // background: `linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)), url("fakeImage.png")`,
           }}
         >
@@ -299,6 +308,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             width={"size-600"}
             isSelected={realMode !== "path"}
             onPress={() => {
+              setRealMode("select");
               dispatchCanvasState({ type: "mode", mode: "select" });
               setIsElementSelected(false);
               // setMode("select");
@@ -311,6 +321,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             width={"size-600"}
             onPress={() => {
               dispatchCanvasState({ type: "mode", mode: "path" });
+              setRealMode("path");
               // setMode("path");
               // changeBrushTool(BrushTool.ERASER);
             }}
@@ -336,6 +347,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         </Flex>
 
         <ColorWheel
+          isDisabled={imageUrlToEdit ? true : false}
           size={130}
           UNSAFE_className="my-5 mx-auto"
           defaultValue="hsl(30, 100%, 50%)"
