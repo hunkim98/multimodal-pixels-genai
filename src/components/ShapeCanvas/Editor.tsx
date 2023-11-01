@@ -28,13 +28,14 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   ref: ForwardedRef<ShapeEditorRef>,
 ) {
   const { imageUrlToEdit } = useContext(ImageContext);
-  const fabricRef = React.useRef<fabric.Canvas>();
+  const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const currentShape = React.useRef<{
     shape: fabric.Rect | fabric.Circle | fabric.Triangle;
     mouseDownOffset: { offsetX: number; offsetY: number };
   }>();
 
+  const copiedElementRef = React.useRef<any>(null);
   const [undoHistory, setUndoHistory] = useState<string[]>([
     `{"version":"5.3.0","objects":[]}`,
   ]);
@@ -42,13 +43,13 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   const undo = () => {
     const lastState = undoHistory[undoHistory.length - 1];
     if (!lastState) {
-      fabricRef.current?.clear();
+      fabricCanvas?.clear();
       return;
     }
     setUndoHistory(undoHistory.slice(0, undoHistory.length - 1));
     setRedoHistory([...redoHistory, lastState]);
-    fabricRef.current?.loadFromJSON(lastState, function () {
-      fabricRef.current?.renderAll();
+    fabricCanvas?.loadFromJSON(lastState, function () {
+      fabricCanvas?.renderAll();
     });
   };
 
@@ -57,13 +58,13 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     if (!lastState) return;
     setRedoHistory(redoHistory.slice(0, redoHistory.length - 1));
     setUndoHistory([...undoHistory, lastState]);
-    fabricRef.current?.loadFromJSON(lastState, function () {
-      fabricRef.current?.renderAll();
+    fabricCanvas?.loadFromJSON(lastState, function () {
+      fabricCanvas?.renderAll();
     });
   };
 
   const getBase64Image = () => {
-    const dataURL = fabricRef.current?.toDataURL({
+    const dataURL = fabricCanvas?.toDataURL({
       format: "png",
     });
 
@@ -71,7 +72,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   };
 
   const recordInHistory = () => {
-    const state = JSON.stringify(fabricRef.current?.toJSON());
+    const state = JSON.stringify(fabricCanvas?.toJSON());
     setUndoHistory(prev => {
       return [...prev, state];
     });
@@ -79,10 +80,10 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   };
 
   const colorSelectedShape = (color: string) => {
-    const activeObject = fabricRef.current?.getActiveObject();
+    const activeObject = fabricCanvas?.getActiveObject();
     if (activeObject) {
       activeObject.set("fill", color);
-      fabricRef.current?.renderAll();
+      fabricCanvas?.renderAll();
       setRecentlyUsedColors(prev => {
         const newSet = new Set(prev);
         newSet.add(color);
@@ -94,27 +95,9 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     const initFabric = () => {
       canvasRef.current?.setAttribute("width", "320");
       canvasRef.current?.setAttribute("height", "320");
-      fabricRef.current = new fabric.Canvas(canvasRef.current);
-      fabricRef.current.isDrawingMode = false;
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Backspace" || event.key === "Delete") {
-        const activeObject = fabricRef.current?.getActiveObject();
-        if (activeObject) {
-          fabricRef.current?.remove(activeObject);
-        }
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key === "c") {
-        const activeObject = fabricRef.current?.getActiveObject();
-        if (activeObject) {
-          activeObject.clone((cloned: any) => {});
-        }
-        // canvas?.cloneSelectedElements(5, 5);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key === "v") {
-        // canvas?.cloneSelectedElements(5, 5);
-      }
+      const canvas = new fabric.Canvas(canvasRef.current);
+      setFabricCanvas(canvas);
+      canvas.isDrawingMode = false;
     };
 
     // const addRectangle = () => {
@@ -126,25 +109,80 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     //     fill: color,
     //   });
 
-    //   fabricRef.current?.add(rect);
+    //   fabricCanvas?.add(rect);
     // };
 
     const disposeFabric = () => {
-      fabricRef.current?.dispose();
+      fabricCanvas?.dispose();
     };
     initFabric();
-    document.addEventListener("keydown", onKeyDown);
 
     // addRectangle();
 
     return () => {
       disposeFabric();
-      document.removeEventListener("keydown", onKeyDown);
     };
   }, []);
 
   useEffect(() => {
-    if (!fabricRef.current) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Backspace" || event.key === "Delete") {
+        const activeObject = fabricCanvas?.getActiveObject();
+        if (activeObject) {
+          fabricCanvas?.remove(activeObject);
+        }
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+        const activeObject = fabricCanvas?.getActiveObject();
+        if (activeObject) {
+          activeObject.clone((cloned: any) => {
+            // setCopiedElement(cloned);
+            copiedElementRef.current = cloned;
+          });
+        }
+        // canvas?.cloneSelectedElements(5, 5);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+        // canvas?.cloneSelectedElements(5, 5);
+        if (copiedElementRef.current) {
+          copiedElementRef.current.clone(function (clonedObj: any) {
+            fabricCanvas?.discardActiveObject();
+            clonedObj.set({
+              left: clonedObj.left + 10,
+              top: clonedObj.top + 10,
+              evented: true,
+            });
+            if (clonedObj.type === "activeSelection") {
+              // active selection needs a reference to the canvas.
+              clonedObj.canvas = fabricCanvas;
+              clonedObj.forEachObject(function (obj: any) {
+                fabricCanvas?.add(obj);
+              });
+              // this should solve the unselectability
+              clonedObj.setCoords();
+            } else {
+              fabricCanvas?.add(clonedObj);
+            }
+            copiedElementRef.current.top += 10;
+            copiedElementRef.current.left += 10;
+            fabricCanvas?.setActiveObject(clonedObj);
+            fabricCanvas?.requestRenderAll();
+          });
+          recordInHistory();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    // addRectangle();
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fabricCanvas, recordInHistory]);
+
+  useEffect(() => {
+    if (!fabricCanvas) return;
     const onMouseDownHandler = (event: fabric.IEvent) => {
       if (!shapeType) return;
       if (event.target) {
@@ -155,7 +193,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
         top: 0,
         left: 0,
       };
-      const allObjects = fabricRef.current!.getObjects();
+      const allObjects = fabricCanvas!.getObjects();
       allObjects.forEach(object => {
         object.selectable = false;
       });
@@ -172,7 +210,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
           shape: rect,
           mouseDownOffset: { offsetX, offsetY },
         };
-        fabricRef.current!.add(rect);
+        fabricCanvas!.add(rect);
       } else if (shapeType === "ellipse") {
         const ellipse = new fabric.Ellipse({
           top: offsetY - top,
@@ -183,7 +221,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
           shape: ellipse,
           mouseDownOffset: { offsetX, offsetY },
         };
-        fabricRef.current!.add(ellipse);
+        fabricCanvas!.add(ellipse);
       } else if (shapeType === "triangle") {
         const triangle = new fabric.Triangle({
           top: offsetY - top,
@@ -196,7 +234,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
           shape: triangle,
           mouseDownOffset: { offsetX, offsetY },
         };
-        fabricRef.current!.add(triangle);
+        fabricCanvas!.add(triangle);
       }
     };
 
@@ -249,7 +287,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
         currentShape.current.shape.setCoords();
       }
 
-      fabricRef.current?.renderAll();
+      fabricCanvas?.renderAll();
     };
 
     const onMouseUpHandler = (event: fabric.IEvent) => {
@@ -263,11 +301,11 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
             Math.abs(currentShape.current.shape.height) <= 3)
         ) {
           shouldRecordInHistory = false;
-          fabricRef.current?.remove(currentShape.current.shape);
+          fabricCanvas?.remove(currentShape.current.shape);
         }
       }
 
-      const allObjects = fabricRef.current!.getObjects();
+      const allObjects = fabricCanvas!.getObjects();
       allObjects.forEach(object => {
         object.selectable = true;
       });
@@ -276,7 +314,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       }
 
       if (shouldRecordInHistory) {
-        const state = JSON.stringify(fabricRef.current?.toJSON());
+        const state = JSON.stringify(fabricCanvas?.toJSON());
 
         setRecentlyUsedColors(prev => {
           const newSet = new Set(prev);
@@ -293,16 +331,16 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       currentShape.current = undefined;
     };
 
-    fabricRef.current.on("mouse:down", onMouseDownHandler);
-    fabricRef.current.on("mouse:move", onMouseMoveHandler);
-    fabricRef.current.on("mouse:up", onMouseUpHandler);
+    fabricCanvas.on("mouse:down", onMouseDownHandler);
+    fabricCanvas.on("mouse:move", onMouseMoveHandler);
+    fabricCanvas.on("mouse:up", onMouseUpHandler);
 
     return () => {
-      fabricRef.current?.off("mouse:down", onMouseDownHandler);
-      fabricRef.current?.off("mouse:move", onMouseMoveHandler);
-      fabricRef.current?.off("mouse:up", onMouseUpHandler);
+      fabricCanvas?.off("mouse:down", onMouseDownHandler);
+      fabricCanvas?.off("mouse:move", onMouseMoveHandler);
+      fabricCanvas?.off("mouse:up", onMouseUpHandler);
     };
-  }, [shapeType, fabricRef, color]);
+  }, [shapeType, fabricCanvas, color]);
 
   useImperativeHandle(
     ref,
