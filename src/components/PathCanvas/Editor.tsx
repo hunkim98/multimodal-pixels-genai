@@ -61,6 +61,13 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const [realMode, setRealMode] = useState("path");
 
   useEffect(() => {
+    if (!svgCanvas) return;
+    if (imageUrlToEdit) {
+      svgCanvas.clear();
+    }
+  }, [imageUrlToEdit, svgCanvas]);
+
+  useEffect(() => {
     const modeListener = setInterval(() => {
       console.log(canvas?.currentMode);
       setRealMode(canvas?.currentMode);

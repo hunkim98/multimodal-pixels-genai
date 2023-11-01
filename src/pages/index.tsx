@@ -46,6 +46,7 @@ import Link from "next/link";
 import { ImageExportRef } from "@/types/imageExportRef";
 import { CanvasContextProvider } from "@/components/PathCanvas/canvasContext";
 import { ImageContext } from "@/components/context/ImageContext";
+import { KandinskyBody } from "@/utils/types";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -119,7 +120,6 @@ export default function Home() {
     data: BrushData;
   }>();
   const [brushCanvasImageBlob, setBrushCanvasImageBlob] = useState<Blob>();
-  const [sketchCanvasImageBlob, setSketchCanvasImageBlob] = useState<Blob>();
 
   const [isModelActive, setIsModelActive] = useState(false);
   const imageExportUtilRef = useRef<ImageExportRef>(null);
@@ -135,17 +135,26 @@ export default function Home() {
   ]);
   const [modelInputs, setModelInputs] = useState<ModelInputs>({
     prompt: "A robot sitting on the ground",
-    image: undefined,
   });
   const generateImages = useCallback(
-    (baseUrl?: string) => {
+    (
+      type: "text2img" | "img2img" | "inpainting",
+      image?: string,
+      mask?: string,
+    ) => {
+      const body: KandinskyBody = {
+        prompt: modelInputs.prompt,
+        image: image,
+        mask: mask,
+        type,
+      };
       axios
-        .post("/api/replicate", { ...modelInputs, image: baseUrl })
+        .post("/genapi/kandinsky2", body)
         .then(res => {
           if (typeof res.data === "string") {
             return;
           }
-          const images = res.data as Array<string>;
+          const images = res.data.images as Array<string>;
           setGalleryImages(prev => [...prev, ...images]);
           setIsModelActive(false);
         })
@@ -156,26 +165,20 @@ export default function Home() {
     [modelInputs],
   );
 
-  // useEffect(() => {
-  //   if (!initialPixelDataArray) {
-  //     return;
-  //   }
-  //   const tempCanvas = document.createElement("canvas");
-  //   tempCanvas.width = 256;
-  //   tempCanvas.height = 256;
-  //   const ctx = tempCanvas.getContext("2d");
-
-  //   const base64String = createImageOutOfNestedColorArray(
-  //     initialPixelDataArray,
-  //   );
-  //   var img = new Image();
-  //   img.onload = function () {
-  //     ctx!.drawImage(img, 0, 0);
-  //   };
-
-  //   img.src = URL.createObjectURL(base64String as any);
-  //   document.body.appendChild(tempCanvas);
-  // }, [initialPixelDataArray]);
+  const onClickGenerateButton = async () => {
+    const userImage = await imageExportUtilRef.current?.getBase64Image();
+    if (!isAssistiveCanvasOpen) {
+      generateImages("text2img");
+    } else {
+      if (!userImage) return;
+      const base64Img = userImage.split(",")[1];
+      if (!imageUrlToEdit) {
+        generateImages("img2img", base64Img);
+      } else {
+        generateImages("inpainting", base64Img, imageUrlToEdit);
+      }
+    }
+  };
 
   return (
     <main className={`flex min-h-screen flex-col p-24 ${inter.className}`}>
@@ -221,51 +224,15 @@ export default function Home() {
               alignSelf={"end"}
               onPress={async () => {
                 setIsModelActive(true);
-                const base64 =
-                  await imageExportUtilRef.current?.getBase64Image();
-                if (base64) {
-                  //download
-                  const a = document.createElement("a");
-                  a.href = base64;
-                  a.download = "myImage.png";
-                  a.click();
-                }
-                // if (!isAssistiveCanvasOpen) {
-                //   generateImages();
-                // } else {
-                //   if (
-                //     selectedAsssistivImageInputType ===
-                //     AssistiveImageInputType.PIXELS
-                //   ) {
-                //     if (initialPixelDataArray) {
-                //       blobToBase64(
-                //         createImageOutOfNestedColorArray(initialPixelDataArray),
-                //       )
-                //         .then(base64String => {
-                //           generateImages(base64String as string);
-                //         })
-                //         .catch(err => {
-                //           setIsModelActive(false);
-                //         });
-                //       return;
-                //     }
-                //   }
-                //   if (
-                //     selectedAsssistivImageInputType ===
-                //     AssistiveImageInputType.BRUSH
-                //   ) {
-                //     if (brushCanvasImageBlob) {
-                //       blobToBase64(brushCanvasImageBlob)
-                //         .then(base64String => {
-                //           generateImages(base64String as string);
-                //         })
-                //         .catch(err => {
-                //           setIsModelActive(false);
-                //         });
-                //       return;
-                //     }
-                //   }
-                //   generateImages();
+                onClickGenerateButton();
+                // const base64 =
+                //   await imageExportUtilRef.current?.getBase64Image();
+                // if (base64) {
+                //   //download
+                //   const a = document.createElement("a");
+                //   a.href = base64;
+                //   a.download = "myImage.png";
+                //   a.click();
                 // }
               }}
             >

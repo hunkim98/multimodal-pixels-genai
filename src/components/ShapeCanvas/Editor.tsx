@@ -29,6 +29,12 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
 ) {
   const { imageUrlToEdit } = useContext(ImageContext);
   const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas>();
+  useEffect(() => {
+    if (!fabricCanvas) return;
+    if (imageUrlToEdit) {
+      fabricCanvas.clear();
+    }
+  }, [imageUrlToEdit]);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const currentShape = React.useRef<{
     shape: fabric.Rect | fabric.Circle | fabric.Triangle;

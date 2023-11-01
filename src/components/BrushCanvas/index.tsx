@@ -86,6 +86,15 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
       element.style["touchAction"] = "none";
       setDataCanvas(element);
     }, []);
+
+    useEffect(() => {
+      if (!editor) {
+        return;
+      }
+      if (imageUrlToEdit) {
+        editor.clear();
+      }
+    }, [imageUrlToEdit, editor]);
     const [changingColor, setChangingColor] = useState(
       parseColor("hsl(50, 100%, 50%)"),
     );

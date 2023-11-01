@@ -77,6 +77,14 @@ const nextConfig = {
     // S3_REGION: process.env.S3_REGION,
     // S3_SECRET_KEY: process.env.S3_SECRET_KEY,
   },
+  async rewrites() {
+    return [
+      {
+        source: "/genapi/:path*",
+        destination: process.env.SERVER_URL + "/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

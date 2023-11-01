@@ -110,3 +110,18 @@ export type CanvasDataInfo = {
   width: number;
   height: number;
 };
+
+export type KandinskyBody = {
+  prompt: string;
+  image?: string;
+  mask?: string;
+  type: "text2img" | "img2img" | "inpainting";
+  num_steps?: number;
+  batch_size?: number;
+  guidance_scale?: number;
+  h?: number;
+  w?: number;
+  sampler?: string;
+  prior_cf_scale?: number;
+  prior_steps?: string;
+};

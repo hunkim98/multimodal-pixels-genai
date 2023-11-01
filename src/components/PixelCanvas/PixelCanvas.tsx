@@ -85,6 +85,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
   );
   useEffect(() => {
     if (imageUrlToEdit) {
+      clear();
       const canvas = getBackgroundCanvas();
       const image = new Image();
       image.src = imageUrlToEdit;
