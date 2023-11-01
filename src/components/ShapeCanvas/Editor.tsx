@@ -5,8 +5,10 @@ import React, {
   useImperativeHandle,
   ForwardedRef,
   useCallback,
+  useContext,
 } from "react";
 import { fabric } from "fabric";
+import { ImageContext } from "../context/ImageContext";
 
 interface Props {
   shapeType: "rect" | "ellipse" | "triangle" | undefined;
@@ -24,6 +26,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   { shapeType, color },
   ref: ForwardedRef<ShapeEditorRef>,
 ) {
+  const { imageUrlToEdit } = useContext(ImageContext);
   const fabricRef = React.useRef<fabric.Canvas>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const currentShape = React.useRef<{
@@ -291,12 +294,14 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   );
 
   return (
-    <canvas
-      style={{
-        border: "0.5px solid black",
-      }}
-      ref={canvasRef}
-    />
+    <div className="relative">
+      <canvas
+        style={{
+          border: "0.5px solid black",
+        }}
+        ref={canvasRef}
+      />
+    </div>
   );
 });
 

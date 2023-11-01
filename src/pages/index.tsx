@@ -23,6 +23,7 @@ import {
   LegacyRef,
   Ref,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -44,6 +45,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ImageExportRef } from "@/types/imageExportRef";
 import { CanvasContextProvider } from "@/components/PathCanvas/canvasContext";
+import { ImageContext } from "@/components/context/ImageContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -105,6 +107,7 @@ export default function Home() {
       setSelectedAssistiveImageInputType(AssistiveImageInputType.NULL);
     }
   }, [imageInputType]);
+  const { setImageUrlToEdit, imageUrlToEdit } = useContext(ImageContext);
   const [isAssistiveCanvasOpen, setIsAssistiveCanvasOpen] = useState(false);
   const [initialPixelDataArray, setInitialPixelDataArray] =
     useState<Array<Array<PixelModifyItem>>>();
@@ -123,7 +126,7 @@ export default function Home() {
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
     useState<AssistiveImageInputType>(AssistiveImageInputType.NULL);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
-    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
+    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/07cfe359-de1a-479c-829b-2d2ec8a2d6c5-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/96f0f0b5-df1b-4dd8-9afc-9f4aa19a40b4-image.png",
@@ -273,7 +276,7 @@ export default function Home() {
                   isIndeterminate
                 />
               ) : (
-                <>Generate</>
+                <> {imageUrlToEdit ? "Edit" : "Generate"}</>
               )}
             </Button>
           </Flex>
@@ -411,14 +414,32 @@ export default function Home() {
         </div> */}
         <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
           {galleryImage.map(image => (
-            <Image
-              UNSAFE_className="mb-4"
-              alt={"image"}
-              key={image}
-              src={image}
-              width={300}
-              height={300}
-            />
+            <div key={image} className="relative">
+              <Image
+                UNSAFE_className="mb-4"
+                alt={"image"}
+                key={image}
+                src={image}
+                width={300}
+                height={300}
+              />
+              <Button
+                variant="secondary"
+                // UNSAFE_className="absolute top-0 right-0"
+                UNSAFE_className="bg-white"
+                UNSAFE_style={{
+                  position: "absolute",
+                  bottom: 25,
+                  right: -10,
+                  color: "#fff",
+                }}
+                onPress={() => {
+                  setImageUrlToEdit(image);
+                }}
+              >
+                Edit
+              </Button>
+            </div>
           ))}
         </div>
       </Flex>

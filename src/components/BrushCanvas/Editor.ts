@@ -1020,10 +1020,10 @@ export class Editor extends EventDispatcher {
   render() {
     this.clear();
 
-    this.ctx.save();
-    this.ctx.fillStyle = "#999999";
-    this.ctx.fillRect(0, 0, this.width, this.height);
-    this.ctx.restore();
+    // this.ctx.save();
+    // this.ctx.fillStyle = "#fff";
+    // this.ctx.fillRect(0, 0, this.width, this.height);
+    // this.ctx.restore();
 
     const convertedLeftTopScreenPoint = convertCartesianToScreen(
       this.interactionCanvasElement,
@@ -1065,13 +1065,13 @@ export class Editor extends EventDispatcher {
 
     // background
     this.ctx.save();
-    this.ctx.fillStyle = "#FFFFFF";
-    this.ctx.fillRect(
-      correctedLeftTopScreenPoint.x,
-      correctedLeftTopScreenPoint.y,
-      this.canvasInfo.width * this.panZoom.scale,
-      this.canvasInfo.height * this.panZoom.scale,
-    );
+    // this.ctx.fillStyle = "#FFFFFF";
+    // this.ctx.fillRect(
+    //   correctedLeftTopScreenPoint.x,
+    //   correctedLeftTopScreenPoint.y,
+    //   this.canvasInfo.width * this.panZoom.scale,
+    //   this.canvasInfo.height * this.panZoom.scale,
+    // );
     this.ctx.restore();
 
     // brush

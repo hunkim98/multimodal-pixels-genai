@@ -28,6 +28,7 @@ import RedoIcon from "@spectrum-icons/workflow/Redo";
 import SliceIcon from "@spectrum-icons/workflow/Slice";
 import { ColorWheel } from "@react-spectrum/color";
 import { ImageExportRef } from "@/types/imageExportRef";
+import { ImageContext } from "../context/ImageContext";
 
 const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   {},
@@ -46,6 +47,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
     new Set(),
   );
+  const { imageUrlToEdit } = React.useContext(ImageContext);
 
   const canvasBackground = document.getElementById("canvasBackground");
   if (canvasBackground) {
@@ -161,13 +163,9 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             // background: `linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)), url("fakeImage.png")`,
           }}
         >
-          <div
-            ref={svgcanvasRef}
-            className="svgcanvas"
-            style={{ position: "relative" }}
-          >
-            {/* <img
-              src={"fakeImage.png"}
+          {imageUrlToEdit && (
+            <img
+              src={imageUrlToEdit}
               style={{
                 touchAction: "none",
                 pointerEvents: "none",
@@ -176,10 +174,14 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
                 left: 0,
                 width: 320,
                 height: 320,
-                opacity: 0.5,
               }}
-            /> */}
-          </div>
+            />
+          )}
+          <div
+            ref={svgcanvasRef}
+            className="svgcanvas"
+            style={{ position: "relative" }}
+          ></div>
         </div>
       </div>
       <div className="relative flex flex-col align-middle px-3 py-3 w-[250px] h-[320px]">

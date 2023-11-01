@@ -8,25 +8,20 @@ export const createImageOutOfNestedColorArray = (
   const imageCanvas = document.createElement("canvas");
   const rowCount = nestedColorArray.length;
   const columnCount = nestedColorArray[0].length;
-  imageCanvas.width = columnCount * GRID_SQUARE_LENGTH;
-  imageCanvas.height = rowCount * GRID_SQUARE_LENGTH;
+  imageCanvas.width = 512;
+  imageCanvas.height = 512;
   const imageContext = imageCanvas.getContext("2d")!;
   imageContext.save();
   imageContext.fillStyle = "#ffffff";
-  imageContext.fillRect(
-    0,
-    0,
-    columnCount * GRID_SQUARE_LENGTH,
-    rowCount * GRID_SQUARE_LENGTH,
-  );
+  imageContext.fillRect(0, 0, 512, 512);
   imageContext.restore();
 
   for (let i = 0; i < rowCount; i++) {
     for (let j = 0; j < columnCount; j++) {
       if (!nestedColorArray[i][j].color) continue;
       const pixelCoord = {
-        x: j * GRID_SQUARE_LENGTH,
-        y: i * GRID_SQUARE_LENGTH,
+        x: (j * 512) / rowCount,
+        y: (i * 512) / columnCount,
       };
       imageContext.save();
       imageContext.fillStyle = nestedColorArray[i][j].color;
@@ -54,6 +49,8 @@ export const createImageFromPartOfCanvas = (
   const tempContext = imageCanvas.getContext("2d")!;
   imageCanvas.width = width;
   imageCanvas.height = height;
+  tempContext.fillStyle = "#ffffff";
+  tempContext.fillRect(0, 0, width, height);
   tempContext.drawImage(
     canvas,
     offsetX,

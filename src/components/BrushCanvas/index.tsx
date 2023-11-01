@@ -2,6 +2,7 @@ import React, {
   ForwardedRef,
   forwardRef,
   useCallback,
+  useContext,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -37,6 +38,7 @@ import { blobToBase64, createImageFromPartOfCanvas } from "@/utils/image";
 import { convertCartesianToScreen, getScreenPoint } from "@/utils/math";
 import { ImageExportRef } from "@/types/imageExportRef";
 import { Forward } from "@spectrum-icons/workflow/index";
+import { ImageContext } from "../context/ImageContext";
 
 export interface BrushCanvasProps {
   canvasWidth?: number;
@@ -65,7 +67,7 @@ export interface BrushCanvasProps {
 const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
   function Canvas(props, ref: ForwardedRef<ImageExportRef>) {
     const containerRef = useRef<HTMLDivElement>(null);
-
+    const { imageUrlToEdit } = useContext(ImageContext);
     const [editor, setEditor] = useState<Editor | null>(null);
     const [dataCanvas, setDataCanvas] = useState<HTMLCanvasElement | null>(
       null,
@@ -140,12 +142,13 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
         convertedLeftTopScreenPoint,
         panZoom,
       );
+
       const blob = createImageFromPartOfCanvas(
         dataCanvas,
         correctedLeftTopScreenPoint.x * widthExtensionRatio,
         correctedLeftTopScreenPoint.y * heightExtensionRatio,
-        canvasInfo.width * panZoom.scale * widthExtensionRatio,
-        canvasInfo.height * panZoom.scale * heightExtensionRatio,
+        512,
+        512,
       );
       props.setBrushCanvasImageBlob(blob);
       return blob;
@@ -405,6 +408,21 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
                 ...props.style,
               }}
             />
+            {imageUrlToEdit && (
+              <img
+                src={imageUrlToEdit}
+                style={{
+                  touchAction: "none",
+                  pointerEvents: "none",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: 320,
+                  height: 320,
+                  // opacity: 0.8,
+                }}
+              />
+            )}
             <canvas
               ref={gotDataCanvasRef}
               style={{

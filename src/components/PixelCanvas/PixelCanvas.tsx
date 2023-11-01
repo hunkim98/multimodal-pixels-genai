@@ -23,6 +23,7 @@ import {
 } from "dotting";
 import React, {
   forwardRef,
+  useContext,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -44,6 +45,7 @@ import { ColorWheel } from "@react-spectrum/color";
 import { CreateEmptySquareData } from "@/utils/dataCreator";
 import { ImageExportRef } from "@/types/imageExportRef";
 import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
+import { ImageContext } from "../context/ImageContext";
 
 interface Props {
   initialData?: Array<Array<PixelModifyItem>>;
@@ -56,6 +58,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
   ref: React.ForwardedRef<ImageExportRef>,
 ) {
   const dottingRef = useRef<DottingRef>(null);
+  const { imageUrlToEdit } = useContext(ImageContext);
   const [isGridVisible, setIsGridVisible] = useState(false);
   const {
     clear,
@@ -80,6 +83,35 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
   const [dataArray, setDataArray] = useState<Array<Array<PixelModifyItem>>>(
     initialData ?? [],
   );
+  useEffect(() => {
+    if (imageUrlToEdit) {
+      const canvas = getBackgroundCanvas();
+      const image = new Image();
+      image.src = imageUrlToEdit;
+      const gridSquareSize = 10;
+      image.onload = () => {
+        const { width, height } = image;
+        const imageWorldPosX = 0;
+        const imageWorldPosY = 0;
+
+        const { x, y } = convertWorldPosToCanvasOffset(
+          imageWorldPosX,
+          imageWorldPosY,
+        );
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const imageWidth = gridSquareSize * 32;
+        const imageHeight = gridSquareSize * 32;
+        const ratio = Math.min(canvasWidth / width, canvasHeight / height, 1);
+        const scaledWidth = width * ratio;
+        const scaledHeight = height * ratio;
+        const left = (canvasWidth - scaledWidth) / 2;
+        const top = (canvasHeight - scaledHeight) / 2;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(image, x, y, imageWidth, imageHeight);
+      };
+    }
+  }, [imageUrlToEdit, getBackgroundCanvas, convertWorldPosToCanvasOffset]);
 
   const {
     addDataChangeListener,
@@ -195,6 +227,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
             },
           ]}
           gridSquareLength={10}
+          defaultPixelColor={imageUrlToEdit ? "transparent" : "#ffffff"}
           isGridVisible={isGridVisible}
           isPanZoomable={false}
           style={{

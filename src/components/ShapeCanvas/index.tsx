@@ -41,6 +41,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
+  const { imageUrlToEdit } = useContext(ImageContext);
   const [finalSelectedColor, setFinalSelectedColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
@@ -68,7 +69,22 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
 
   return (
     <Flex direction="row" gap="size-100">
-      <div>
+      <div className="w-[320px] h-[320px] relative">
+        {imageUrlToEdit && (
+          <img
+            src={imageUrlToEdit}
+            style={{
+              touchAction: "none",
+              pointerEvents: "none",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 320,
+              height: 320,
+              // opacity: 0.8,
+            }}
+          />
+        )}
         <Editor
           ref={editorRef}
           shapeType={shapeType}
