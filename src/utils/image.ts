@@ -1,6 +1,6 @@
 import { PixelModifyItem } from "dotting";
 
-const GRID_SQUARE_LENGTH = 20;
+const GRID_SQUARE_LENGTH = 10;
 
 export const createImageOutOfNestedColorArray = (
   nestedColorArray: PixelModifyItem[][],
@@ -28,8 +28,8 @@ export const createImageOutOfNestedColorArray = (
       imageContext.fillRect(
         pixelCoord.x,
         pixelCoord.y,
-        GRID_SQUARE_LENGTH,
-        GRID_SQUARE_LENGTH,
+        (GRID_SQUARE_LENGTH * 512) / 320,
+        (GRID_SQUARE_LENGTH * 512) / 320,
       );
       imageContext.restore();
     }
