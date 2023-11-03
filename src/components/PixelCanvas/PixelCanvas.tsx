@@ -58,7 +58,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
   ref: React.ForwardedRef<ImageExportRef>,
 ) {
   const dottingRef = useRef<DottingRef>(null);
-  const { imageUrlToEdit } = useContext(ImageContext);
+  const { imageUrlToEdit, setImageUrlToEdit } = useContext(ImageContext);
   const [isGridVisible, setIsGridVisible] = useState(false);
   const {
     clear,
@@ -76,17 +76,18 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
   const [finalSelectedColor, setFinalSelectedColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
-  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set(),
+  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Array<string>>(
+    [],
   );
 
   const [dataArray, setDataArray] = useState<Array<Array<PixelModifyItem>>>(
     initialData ?? [],
   );
   useEffect(() => {
+    const canvas = getBackgroundCanvas();
     if (imageUrlToEdit) {
       clear();
-      const canvas = getBackgroundCanvas();
+      setRecentlyUsedColors([]);
       const image = new Image();
       image.src = imageUrlToEdit;
       const gridSquareSize = 10;
@@ -112,7 +113,12 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
         ctx?.drawImage(image, x, y, imageWidth, imageHeight);
       };
     }
-  }, [imageUrlToEdit, getBackgroundCanvas, convertWorldPosToCanvasOffset]);
+  }, [
+    imageUrlToEdit,
+    getBackgroundCanvas,
+    convertWorldPosToCanvasOffset,
+    setRecentlyUsedColors,
+  ]);
 
   const {
     addDataChangeListener,
@@ -162,8 +168,14 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
         const color = strokedPixels[strokedPixels.length - 1].color;
         setRecentlyUsedColors(prev => {
           const newSet = new Set(prev);
-          newSet.add(color);
-          return newSet;
+          const newArray = Array.from(newSet);
+          if (!newSet.has(color)) {
+            if (newSet.size >= 6) {
+              newArray.pop();
+            }
+            newArray.unshift(color);
+          }
+          return newArray;
         });
       }
     };
@@ -217,7 +229,9 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
           width={320}
           height={320}
           isGridFixed={true}
-          brushColor={finalSelectedColor.toString("hex")}
+          brushColor={
+            imageUrlToEdit ? "#DDDDDD" : finalSelectedColor.toString("hex")
+          }
           initLayers={[
             {
               id: "default",
@@ -309,6 +323,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
         />
         <ColorWheel
           size={130}
+          isDisabled={imageUrlToEdit ? true : false}
           UNSAFE_className="my-5 mx-auto"
           defaultValue="hsl(30, 100%, 50%)"
           value={changingColor}
@@ -319,25 +334,46 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
           onChangeEnd={setFinalSelectedColor}
         />
 
-        <Flex direction="column">
-          <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
-          <Flex gap="size-100" wrap>
-            {Array.from(recentlyUsedColors).map(color => (
-              <div
-                key={color}
-                className={`w-6 h-6 rounded-full`}
-                style={{
-                  backgroundColor: color,
-                }}
-                onClick={() => {
-                  const newColor = parseColor(color);
-                  changeBrushTool(BrushTool.DOT);
-                  setFinalSelectedColor(newColor);
-                }}
-              />
-            ))}
+        {!imageUrlToEdit ? (
+          <Flex direction="column">
+            <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
+            <Flex gap="size-100" wrap>
+              {Array.from(recentlyUsedColors).map(color => (
+                <div
+                  key={color}
+                  className={`w-6 h-6 rounded-full`}
+                  style={{
+                    backgroundColor: color,
+                  }}
+                  onClick={() => {
+                    const newColor = parseColor(color);
+                    changeBrushTool(BrushTool.DOT);
+                    setFinalSelectedColor(newColor);
+                  }}
+                />
+              ))}
+            </Flex>
           </Flex>
-        </Flex>
+        ) : (
+          <Button
+            variant="primary"
+            onPress={() => {
+              setImageUrlToEdit(undefined);
+              const backgroundCanvas = getBackgroundCanvas();
+              const ctx = backgroundCanvas.getContext("2d");
+              ctx?.clearRect(
+                0,
+                0,
+                backgroundCanvas.width,
+                backgroundCanvas.height,
+              );
+              clear();
+              setRecentlyUsedColors([]);
+            }}
+          >
+            Cancel Editing
+          </Button>
+        )}
       </div>
     </Flex>
   );

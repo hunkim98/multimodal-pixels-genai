@@ -41,7 +41,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
-  const { imageUrlToEdit } = useContext(ImageContext);
+  const { imageUrlToEdit, setImageUrlToEdit } = useContext(ImageContext);
   const [finalSelectedColor, setFinalSelectedColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
@@ -51,8 +51,8 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
 
     editorRef.current?.recordInHistory();
   }, [finalSelectedColor]);
-  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set(),
+  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Array<string>>(
+    [],
   );
   const [shapeType, setShapeType] = useState<
     "rect" | "ellipse" | "triangle" | undefined
@@ -104,7 +104,9 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         <Editor
           ref={editorRef}
           shapeType={shapeType}
-          color={finalSelectedColor.toString("hex")}
+          color={
+            imageUrlToEdit ? "#DDDDDD" : finalSelectedColor.toString("hex")
+          }
           setRecentlyUsedColors={setRecentlyUsedColors}
           // undoHistory={undoHistory}
           // redoHistory={redoHistory}
@@ -194,6 +196,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         /> */}
         <ColorWheel
           size={130}
+          isDisabled={imageUrlToEdit ? true : false}
           UNSAFE_className="my-5 mx-auto"
           defaultValue="hsl(30, 100%, 50%)"
           value={changingColor}
@@ -202,26 +205,39 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           }}
           onChangeEnd={setFinalSelectedColor}
         />
-
-        <Flex direction="column">
-          <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
-          <Flex gap="size-100" wrap>
-            {Array.from(recentlyUsedColors).map(color => (
-              <div
-                key={color}
-                className={`w-6 h-6 rounded-full`}
-                style={{
-                  backgroundColor: color,
-                }}
-                onClick={() => {
-                  const newColor = parseColor(color);
-                  setFinalSelectedColor(newColor);
-                }}
-              />
-            ))}
+        {!imageUrlToEdit ? (
+          <Flex direction="column">
+            <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
+            <Flex gap="size-100" wrap>
+              {Array.from(recentlyUsedColors).map(color => (
+                <div
+                  key={color}
+                  className={`w-6 h-6 rounded-full`}
+                  style={{
+                    backgroundColor: color,
+                  }}
+                  onClick={() => {
+                    const newColor = parseColor(color);
+                    setFinalSelectedColor(newColor);
+                  }}
+                />
+              ))}
+            </Flex>
           </Flex>
-        </Flex>
-        <Button
+        ) : (
+          <Button
+            variant="primary"
+            onPress={() => {
+              setImageUrlToEdit(undefined);
+              setRecentlyUsedColors([]);
+
+              editorRef.current?.clear();
+            }}
+          >
+            Cancel Editing
+          </Button>
+        )}
+        {/* <Button
           variant="cta"
           onPress={() => {
             const imageBase = editorRef.current?.getBase64Image();
@@ -229,7 +245,7 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           }}
         >
           download
-        </Button>
+        </Button> */}
       </div>
     </Flex>
   );

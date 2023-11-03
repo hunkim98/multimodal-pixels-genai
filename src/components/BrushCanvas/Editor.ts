@@ -948,6 +948,11 @@ export class Editor extends EventDispatcher {
     this.ctx.clearRect(0, 0, this.width, this.height);
   }
 
+  reset() {
+    this.data = [];
+    this.clear();
+  }
+
   destroy() {
     touchy(
       this.interactionCanvasElement,

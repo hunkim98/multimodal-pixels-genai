@@ -48,10 +48,10 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   );
   const [isElementSelected, setIsElementSelected] = useState(false);
   const [selectedElement, setSelectedElement] = useState<any>(null);
-  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set(),
+  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Array<string>>(
+    [],
   );
-  const { imageUrlToEdit } = React.useContext(ImageContext);
+  const { imageUrlToEdit, setImageUrlToEdit } = React.useContext(ImageContext);
   const canvasBackground = document.getElementById("canvasBackground");
   if (canvasBackground) {
     canvasBackground.children[0].setAttribute("fill", "transparent");
@@ -63,16 +63,20 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   useEffect(() => {
     if (!svgCanvas) return;
     if (imageUrlToEdit) {
-      // svgCanvas.clear();
       const elements = svgCanvas.getVisibleElements();
       svgCanvas.addToSelection(elements);
       svgCanvas.deleteSelectedElements();
       dispatchCanvasState({ type: "mode", mode: "select" });
-
-      for (const element of elements) {
-        console.log(element.getAttribute("id"));
-        const id = element.getAttribute("id");
-      }
+      dispatchCanvasState({
+        type: "color",
+        colorType: "fill",
+        color: "#DDDDDD",
+      });
+      dispatchCanvasState({
+        type: "color",
+        colorType: "stroke",
+        color: "#DDDDDD",
+      });
     }
   }, [imageUrlToEdit, svgCanvas]);
 
@@ -98,8 +102,14 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         selectedElement.setAttribute("fill", color);
         setRecentlyUsedColors(prev => {
           const newSet = new Set(prev);
-          newSet.add(color);
-          return newSet;
+          const newArray = Array.from(newSet);
+          if (!newSet.has(color)) {
+            if (newSet.size >= 6) {
+              newArray.pop();
+            }
+            newArray.unshift(color);
+          }
+          return newArray;
         });
       }
       dispatchCanvasState({
@@ -120,8 +130,14 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     if (selectedElement) {
       setRecentlyUsedColors(prev => {
         const newSet = new Set(prev);
-        newSet.add(selectedElement.getAttribute("fill")!);
-        return newSet;
+        const newArray = Array.from(newSet);
+        if (!newSet.has(selectedElement.getAttribute("fill")!)) {
+          if (newSet.size >= 6) {
+            newArray.pop();
+          }
+          newArray.unshift(selectedElement.getAttribute("fill")!);
+        }
+        return newArray;
       });
     }
   }, [selectedElement, finalSelectedColor]);
@@ -200,6 +216,8 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     // return a Promise synchronously
     return new Promise((resolve, reject) => {
       const imgToDraw = new Image();
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, 512, 512);
       imgToDraw.src = imageUrl;
       imgToDraw.onload = () => {
         ctx.drawImage(imgToDraw, 0, 0, 512, 512); // expand
@@ -213,14 +231,13 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     ref,
     () => ({
       getBase64Image: async () => {
-        if (realMode !== "select") {
-          alert("선택영역를 선택해제해주시고 시도해주세요");
-          return;
-        }
-        if (document.getElementById("svgroot")) {
-          var s = new XMLSerializer().serializeToString(
-            document.getElementById("svgroot")!,
-          );
+        const svgElement = document.getElementById("svgroot");
+        // clone the svg element
+        const clonedSvgElement = svgElement?.cloneNode(true);
+        // remove child id selectorParentGroup
+        clonedSvgElement?.removeChild(clonedSvgElement.lastChild!);
+        if (clonedSvgElement) {
+          var s = new XMLSerializer().serializeToString(clonedSvgElement!);
           var encodedData = window.btoa(s);
           const base64 = "data:image/svg+xml;base64," + encodedData;
           const canvas = document.createElement("canvas");
@@ -281,8 +298,14 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
               if (canvas?.drawnPath) {
                 setRecentlyUsedColors(prev => {
                   const newSet = new Set(prev);
-                  newSet.add(finalSelectedColor.toString("hex"));
-                  return newSet;
+                  const newArray = Array.from(newSet);
+                  if (!newSet.has(finalSelectedColor.toString("hex"))) {
+                    if (newSet.size >= 6) {
+                      newArray.pop();
+                    }
+                    newArray.unshift(finalSelectedColor.toString("hex"));
+                  }
+                  return newArray;
                 });
               }
             }}
@@ -303,7 +326,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             </Content>
           </ContextualHelp>
         </Flex> */}
-        <Flex justifyContent={"space-between"} UNSAFE_className="mt-1">
+        <Flex justifyContent={"space-between"} UNSAFE_className="mt-1 ">
           <ToggleButton
             width={"size-600"}
             isSelected={realMode !== "path"}
@@ -358,24 +381,50 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           onChangeEnd={setFinalSelectedColor}
         />
 
-        <Flex direction="column">
-          <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
-          <Flex gap="size-100" wrap>
-            {Array.from(recentlyUsedColors).map(color => (
-              <div
-                key={color}
-                className={`w-6 h-6 rounded-full`}
-                style={{
-                  backgroundColor: color,
-                }}
-                onClick={() => {
-                  const newColor = parseColor(color);
-                  setFinalSelectedColor(newColor);
-                }}
-              />
-            ))}
+        {!imageUrlToEdit ? (
+          <Flex direction="column">
+            <Text UNSAFE_className="text-xs mb-1">Recently Used Colors</Text>
+            <Flex gap="size-100" wrap>
+              {Array.from(recentlyUsedColors).map(color => (
+                <div
+                  key={color}
+                  className={`w-6 h-6 rounded-full`}
+                  style={{
+                    backgroundColor: color,
+                  }}
+                  onClick={() => {
+                    const newColor = parseColor(color);
+                    setFinalSelectedColor(newColor);
+                  }}
+                />
+              ))}
+            </Flex>
           </Flex>
-        </Flex>
+        ) : (
+          <Button
+            justifySelf={"end"}
+            variant="primary"
+            onPress={() => {
+              setImageUrlToEdit(undefined);
+              const elements = svgCanvas.getVisibleElements();
+              svgCanvas.addToSelection(elements);
+              svgCanvas.deleteSelectedElements();
+              setRecentlyUsedColors([]);
+              dispatchCanvasState({
+                type: "color",
+                colorType: "fill",
+                color: finalSelectedColor,
+              });
+              dispatchCanvasState({
+                type: "color",
+                colorType: "stroke",
+                color: finalSelectedColor,
+              });
+            }}
+          >
+            Cancel Editing
+          </Button>
+        )}
       </div>
     </Flex>
   );

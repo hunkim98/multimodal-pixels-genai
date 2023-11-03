@@ -9,10 +9,11 @@ import React, {
 } from "react";
 import { fabric } from "fabric";
 import { ImageContext } from "../context/ImageContext";
+import { resolve } from "path";
 
 interface Props {
   shapeType: "rect" | "ellipse" | "triangle" | undefined;
-  setRecentlyUsedColors: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setRecentlyUsedColors: React.Dispatch<React.SetStateAction<Array<string>>>;
   color: string;
 }
 export interface ShapeEditorRef {
@@ -20,7 +21,8 @@ export interface ShapeEditorRef {
   redo: () => void;
   colorSelectedShape: (color: string) => void;
   recordInHistory: () => void;
-  getBase64Image: () => string | undefined;
+  getBase64Image: () => Promise<string | undefined>;
+  clear: () => void;
 }
 
 const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
@@ -33,6 +35,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     if (!fabricCanvas) return;
     if (imageUrlToEdit) {
       fabricCanvas.clear();
+      setRecentlyUsedColors([]);
     }
   }, [imageUrlToEdit]);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -69,12 +72,33 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     });
   };
 
-  const getBase64Image = () => {
-    const dataURL = fabricCanvas?.toDataURL({
-      format: "png",
-    });
+  const drawFabricImage = async (context: CanvasRenderingContext2D) => {
+    return new Promise((resolve, reject) => {
+      const dataURL = fabricCanvas?.toDataURL({
+        format: "png",
+      });
+      if (!context) return;
 
-    return dataURL;
+      const image = new Image();
+      image.src = dataURL || "";
+      image.onload = () => {
+        context.drawImage(image, 0, 0, 512, 512);
+        resolve("success");
+      };
+      image.onerror = reject;
+    });
+  };
+
+  const getBase64Image = async () => {
+    if (!fabricCanvas) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    await drawFabricImage(context!);
+    return canvas.toDataURL("image/png");
   };
 
   const recordInHistory = () => {
@@ -92,8 +116,14 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       fabricCanvas?.renderAll();
       setRecentlyUsedColors(prev => {
         const newSet = new Set(prev);
-        newSet.add(color);
-        return newSet;
+        const newArray = Array.from(newSet);
+        if (!newSet.has(color)) {
+          if (newSet.size >= 6) {
+            newArray.pop();
+          }
+          newArray.unshift(color);
+        }
+        return newArray;
       });
     }
   };
@@ -102,6 +132,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       canvasRef.current?.setAttribute("width", "320");
       canvasRef.current?.setAttribute("height", "320");
       const canvas = new fabric.Canvas(canvasRef.current);
+
       setFabricCanvas(canvas);
       canvas.isDrawingMode = false;
     };
@@ -324,8 +355,14 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
 
         setRecentlyUsedColors(prev => {
           const newSet = new Set(prev);
-          newSet.add(color);
-          return newSet;
+          const newArray = Array.from(newSet);
+          if (!newSet.has(color)) {
+            if (newSet.size >= 6) {
+              newArray.pop();
+            }
+            newArray.unshift(color);
+          }
+          return newArray;
         });
 
         setUndoHistory(prev => {
@@ -348,6 +385,11 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     };
   }, [shapeType, fabricCanvas, color]);
 
+  const clear = useCallback(() => {
+    if (!fabricCanvas) return;
+    fabricCanvas.clear();
+  }, [fabricCanvas]);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -356,6 +398,7 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       colorSelectedShape,
       recordInHistory,
       getBase64Image,
+      clear,
     }),
     [undo, redo, colorSelectedShape, recordInHistory, getBase64Image],
   );

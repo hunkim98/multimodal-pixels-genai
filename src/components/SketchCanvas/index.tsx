@@ -83,8 +83,8 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
   const [strokeEndListeners, setStrokeEndListener] = useState<
     CanvasStrokeEndHandler[]
   >([]);
-  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Set<string>>(
-    new Set(),
+  const [recentlyUsedColors, setRecentlyUsedColors] = useState<Array<string>>(
+    [],
   );
 
   const gotBackgroundCanvasRef = useCallback((element: HTMLCanvasElement) => {
@@ -212,8 +212,14 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
     (params: CanvasStrokeEndParams) => {
       setRecentlyUsedColors(prev => {
         const newSet = new Set(prev);
-        newSet.add(params.brushColor);
-        return newSet;
+        const newArray = Array.from(newSet);
+        if (!newSet.has(params.brushColor)) {
+          if (newSet.size >= 6) {
+            newArray.pop();
+          }
+          newArray.unshift(params.brushColor);
+        }
+        return newArray;
       });
     },
     [],

@@ -137,11 +137,15 @@ export default function Home() {
     prompt: "A robot sitting on the ground",
   });
   const generateImages = useCallback(
-    (
-      type: "text2img" | "img2img" | "inpainting",
-      image?: string,
-      mask?: string,
-    ) => {
+    ({
+      type,
+      image,
+      mask,
+    }: {
+      type: "text2img" | "img2img" | "inpainting";
+      image?: string;
+      mask?: string;
+    }) => {
       const body: KandinskyBody = {
         prompt: modelInputs.prompt,
         image: image,
@@ -167,15 +171,25 @@ export default function Home() {
 
   const onClickGenerateButton = async () => {
     const userImage = await imageExportUtilRef.current?.getBase64Image();
+    // download
+    // const a = document.createElement("a");
+    // a.href = userImage;
+    // a.download = "myImage.png";
+    // a.click();
+    // return;
     if (!isAssistiveCanvasOpen) {
-      generateImages("text2img");
+      generateImages({ type: "text2img" });
     } else {
       if (!userImage) return;
       const base64Img = userImage.split(",")[1];
       if (!imageUrlToEdit) {
-        generateImages("img2img", base64Img);
+        generateImages({ type: "img2img", image: base64Img });
       } else {
-        generateImages("inpainting", base64Img, imageUrlToEdit);
+        generateImages({
+          type: "inpainting",
+          mask: base64Img,
+          image: imageUrlToEdit,
+        });
       }
     }
   };
