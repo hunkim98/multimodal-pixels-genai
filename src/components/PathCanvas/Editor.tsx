@@ -82,7 +82,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
 
   useEffect(() => {
     const modeListener = setInterval(() => {
-      console.log(canvas?.currentMode);
+      // console.log(canvas?.currentMode);
       setRealMode(canvas?.currentMode);
     }, 500);
     return () => {
@@ -185,7 +185,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
           canvas?.addToSelection(copiedElements);
           canvas?.cloneSelectedElements(5, 5);
           // canvas?.pasteElements(canvas?.selectedElements, 0, 0);
-          console.log("pasted!");
+          // console.log("pasted!");
         }
       }
     };
@@ -201,7 +201,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     const canvas = new SvgCanvas(editorDom, config);
     setSvgCanvas(canvas);
     updateCanvas(canvas, svgcanvasRef.current, config, true);
-    console.log(canvas);
+    // console.log(canvas);
     dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
     dispatchCanvasState({ type: "mode", mode: "path" });
     document.addEventListener("keydown", onKeyDown.bind(canvas));
@@ -289,7 +289,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
                 setIsElementSelected(true);
                 setSelectedElement(target);
                 const fillColor = parseColor(target.getAttribute("fill")!);
-                console.log(target.getAttribute("fill"));
+                // console.log(target.getAttribute("fill"));
                 setFinalSelectedColor(fillColor);
               } else {
                 setIsElementSelected(false);

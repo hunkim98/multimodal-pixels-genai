@@ -103,7 +103,6 @@ export default function Home() {
           setSelectedAssistiveImageInputType(AssistiveImageInputType.NULL);
       }
     } else {
-      console.log("heys");
       setIsAssistiveCanvasOpen(false);
       setSelectedAssistiveImageInputType(AssistiveImageInputType.NULL);
     }
@@ -416,6 +415,7 @@ export default function Home() {
                 }}
                 onPress={() => {
                   setImageUrlToEdit(image);
+                  setIsAssistiveCanvasOpen(true);
                 }}
               >
                 Edit

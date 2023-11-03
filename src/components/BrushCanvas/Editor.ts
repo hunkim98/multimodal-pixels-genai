@@ -758,7 +758,7 @@ export class Editor extends EventDispatcher {
 
   changeStrokeWidth(width: number) {
     this.strokeWidth = width;
-    console.log("stroke width", this.strokeWidth);
+    // console.log("stroke width", this.strokeWidth);
   }
 
   recordAction(action: Action) {
