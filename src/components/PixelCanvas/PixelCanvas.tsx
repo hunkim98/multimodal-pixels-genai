@@ -112,6 +112,13 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(image, x, y, imageWidth, imageHeight);
       };
+    } else {
+      const backgroundCanvas = getBackgroundCanvas();
+      if (!backgroundCanvas) return;
+      const ctx = backgroundCanvas.getContext("2d");
+      ctx?.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+      clear();
+      setRecentlyUsedColors([]);
     }
   }, [
     imageUrlToEdit,
@@ -359,16 +366,6 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
             variant="primary"
             onPress={() => {
               setImageUrlToEdit(undefined);
-              const backgroundCanvas = getBackgroundCanvas();
-              const ctx = backgroundCanvas.getContext("2d");
-              ctx?.clearRect(
-                0,
-                0,
-                backgroundCanvas.width,
-                backgroundCanvas.height,
-              );
-              clear();
-              setRecentlyUsedColors([]);
             }}
           >
             Cancel Editing

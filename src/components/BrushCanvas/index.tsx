@@ -111,6 +111,10 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
         editor.reset();
         editor.changeBrushColor("#DDDDDD");
         setRecentlyUsedColors([]);
+      } else {
+        editor.reset();
+        editor.changeBrushColor(finalSelectedColor.toString("hex"));
+        setRecentlyUsedColors([]);
       }
     }, [imageUrlToEdit, editor, setRecentlyUsedColors]);
 
@@ -565,9 +569,6 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
               variant="primary"
               onPress={() => {
                 setImageUrlToEdit(undefined);
-                changeBrushColor(finalSelectedColor.toString("hex"));
-                setRecentlyUsedColors([]);
-                editor?.reset();
               }}
             >
               Cancel Editing

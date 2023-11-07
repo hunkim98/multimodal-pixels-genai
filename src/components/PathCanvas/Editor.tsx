@@ -77,6 +77,21 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
         colorType: "stroke",
         color: "#DDDDDD",
       });
+    } else {
+      const elements = svgCanvas.getVisibleElements();
+      svgCanvas.addToSelection(elements);
+      svgCanvas.deleteSelectedElements();
+      setRecentlyUsedColors([]);
+      dispatchCanvasState({
+        type: "color",
+        colorType: "fill",
+        color: finalSelectedColor.toString("hex"),
+      });
+      dispatchCanvasState({
+        type: "color",
+        colorType: "stroke",
+        color: finalSelectedColor.toString("hex"),
+      });
     }
   }, [imageUrlToEdit, svgCanvas]);
 
@@ -406,20 +421,20 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             variant="primary"
             onPress={() => {
               setImageUrlToEdit(undefined);
-              const elements = svgCanvas.getVisibleElements();
-              svgCanvas.addToSelection(elements);
-              svgCanvas.deleteSelectedElements();
-              setRecentlyUsedColors([]);
-              dispatchCanvasState({
-                type: "color",
-                colorType: "fill",
-                color: finalSelectedColor,
-              });
-              dispatchCanvasState({
-                type: "color",
-                colorType: "stroke",
-                color: finalSelectedColor,
-              });
+              // const elements = svgCanvas.getVisibleElements();
+              // svgCanvas.addToSelection(elements);
+              // svgCanvas.deleteSelectedElements();
+              // setRecentlyUsedColors([]);
+              // dispatchCanvasState({
+              //   type: "color",
+              //   colorType: "fill",
+              //   color: finalSelectedColor,
+              // });
+              // dispatchCanvasState({
+              //   type: "color",
+              //   colorType: "stroke",
+              //   color: finalSelectedColor,
+              // });
             }}
           >
             Cancel Editing

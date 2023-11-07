@@ -193,6 +193,12 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (!isAssistiveCanvasOpen) {
+      setImageUrlToEdit(undefined);
+    }
+  }, [isAssistiveCanvasOpen]);
+
   return (
     <main className={`flex min-h-screen flex-col p-24 ${inter.className}`}>
       <div className="absolute top-0 left-0">

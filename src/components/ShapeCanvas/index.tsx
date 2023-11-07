@@ -83,6 +83,16 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     };
   }, [editorRef.current]);
 
+  useEffect(() => {
+    if (!imageUrlToEdit) {
+      setRecentlyUsedColors([]);
+      editorRef.current?.clear();
+    } else {
+      editorRef.current?.clear();
+      setRecentlyUsedColors([]);
+    }
+  }, [imageUrlToEdit]);
+
   return (
     <Flex direction="row" gap="size-100">
       <div className="w-[320px] h-[320px] relative">
@@ -229,9 +239,6 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             variant="primary"
             onPress={() => {
               setImageUrlToEdit(undefined);
-              setRecentlyUsedColors([]);
-
-              editorRef.current?.clear();
             }}
           >
             Cancel Editing
