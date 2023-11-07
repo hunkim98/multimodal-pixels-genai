@@ -132,6 +132,13 @@ export default function Home() {
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/9ee9d9df-c2ec-49e4-aaff-19d4c2328bdc-image.png",
     // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/756e4d6c-349c-4dbc-9de8-48d44498298d-image.png",
   ]);
+  useEffect(() => {
+    // access local storage
+    const localData = localStorage.getItem("generated_images");
+    if (localData) {
+      setGalleryImages(JSON.parse(localData));
+    }
+  }, [setGalleryImages]);
   const [modelInputs, setModelInputs] = useState<ModelInputs>({
     prompt: "A robot sitting on the ground",
   });
@@ -158,7 +165,13 @@ export default function Home() {
             return;
           }
           const images = res.data.images as Array<string>;
-          setGalleryImages(prev => [...prev, ...images]);
+          setGalleryImages(prev => {
+            localStorage.setItem(
+              "generated_images",
+              JSON.stringify([...prev, ...images]),
+            );
+            return [...prev, ...images];
+          });
           setIsModelActive(false);
         })
         .catch(err => {
