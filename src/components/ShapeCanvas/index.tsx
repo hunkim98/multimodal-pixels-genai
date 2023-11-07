@@ -35,9 +35,8 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   {},
   ref: React.ForwardedRef<ImageExportRef>,
 ) {
-  const fabricRef = React.useRef<fabric.Canvas>();
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const editorRef = React.useRef<ShapeEditorRef>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const [changingColor, setChangingColor] = useState(
     parseColor("hsl(50, 100%, 50%)"),
   );
@@ -69,21 +68,6 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   );
 
   useEffect(() => {
-    const keyDownListener = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-        editorRef.current?.undo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-        editorRef.current?.redo();
-      }
-    };
-    window.addEventListener("keydown", keyDownListener);
-    return () => {
-      window.removeEventListener("keydown", keyDownListener);
-    };
-  }, [editorRef.current]);
-
-  useEffect(() => {
     if (!imageUrlToEdit) {
       setRecentlyUsedColors([]);
       editorRef.current?.clear();
@@ -95,7 +79,20 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
 
   return (
     <Flex direction="row" gap="size-100">
-      <div className="w-[320px] h-[320px] relative">
+      <div
+        className="w-[320px] h-[320px] relative"
+        style={{
+          outline: "none",
+        }}
+        ref={containerRef}
+        onMouseDown={() => {
+          containerRef.current?.focus();
+        }}
+        onKeyDown={e => {
+          editorRef.current?.onKeydown(e as any);
+        }}
+        tabIndex={1}
+      >
         {imageUrlToEdit && (
           <img
             src={imageUrlToEdit}

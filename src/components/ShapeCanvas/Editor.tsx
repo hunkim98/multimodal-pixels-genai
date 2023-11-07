@@ -23,13 +23,13 @@ export interface ShapeEditorRef {
   recordInHistory: () => void;
   getBase64Image: () => Promise<string | undefined>;
   clear: () => void;
+  onKeydown: (event: KeyboardEvent) => void;
 }
 
 const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
   { shapeType, color, setRecentlyUsedColors },
   ref: ForwardedRef<ShapeEditorRef>,
 ) {
-  const { imageUrlToEdit } = useContext(ImageContext);
   const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const currentShape = React.useRef<{
@@ -154,62 +154,59 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
     };
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Backspace" || event.key === "Delete") {
-        const activeObject = fabricCanvas?.getActiveObject();
-        if (activeObject) {
-          fabricCanvas?.remove(activeObject);
-        }
+  const onKeydown = (event: KeyboardEvent) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "z") {
+      undo();
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "y") {
+      redo();
+    }
+    if (event.key === "Backspace" || event.key === "Delete") {
+      const activeObject = fabricCanvas?.getActiveObject();
+      if (activeObject) {
+        fabricCanvas?.remove(activeObject);
       }
-      if ((event.ctrlKey || event.metaKey) && event.key === "c") {
-        const activeObject = fabricCanvas?.getActiveObject();
-        if (activeObject) {
-          activeObject.clone((cloned: any) => {
-            // setCopiedElement(cloned);
-            copiedElementRef.current = cloned;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+      const activeObject = fabricCanvas?.getActiveObject();
+      if (activeObject) {
+        activeObject.clone((cloned: any) => {
+          // setCopiedElement(cloned);
+          copiedElementRef.current = cloned;
+        });
+      }
+      // canvas?.cloneSelectedElements(5, 5);
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+      // canvas?.cloneSelectedElements(5, 5);
+      if (copiedElementRef.current) {
+        copiedElementRef.current.clone(function (clonedObj: any) {
+          fabricCanvas?.discardActiveObject();
+          clonedObj.set({
+            left: clonedObj.left + 10,
+            top: clonedObj.top + 10,
+            evented: true,
           });
-        }
-        // canvas?.cloneSelectedElements(5, 5);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key === "v") {
-        // canvas?.cloneSelectedElements(5, 5);
-        if (copiedElementRef.current) {
-          copiedElementRef.current.clone(function (clonedObj: any) {
-            fabricCanvas?.discardActiveObject();
-            clonedObj.set({
-              left: clonedObj.left + 10,
-              top: clonedObj.top + 10,
-              evented: true,
+          if (clonedObj.type === "activeSelection") {
+            // active selection needs a reference to the canvas.
+            clonedObj.canvas = fabricCanvas;
+            clonedObj.forEachObject(function (obj: any) {
+              fabricCanvas?.add(obj);
             });
-            if (clonedObj.type === "activeSelection") {
-              // active selection needs a reference to the canvas.
-              clonedObj.canvas = fabricCanvas;
-              clonedObj.forEachObject(function (obj: any) {
-                fabricCanvas?.add(obj);
-              });
-              // this should solve the unselectability
-              clonedObj.setCoords();
-            } else {
-              fabricCanvas?.add(clonedObj);
-            }
-            copiedElementRef.current.top += 10;
-            copiedElementRef.current.left += 10;
-            fabricCanvas?.setActiveObject(clonedObj);
-            fabricCanvas?.requestRenderAll();
-          });
-          recordInHistory();
-        }
+            // this should solve the unselectability
+            clonedObj.setCoords();
+          } else {
+            fabricCanvas?.add(clonedObj);
+          }
+          copiedElementRef.current.top += 10;
+          copiedElementRef.current.left += 10;
+          fabricCanvas?.setActiveObject(clonedObj);
+          fabricCanvas?.requestRenderAll();
+        });
+        recordInHistory();
       }
-    };
-    document.addEventListener("keydown", onKeyDown);
-
-    // addRectangle();
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [fabricCanvas, recordInHistory]);
+    }
+  };
 
   useEffect(() => {
     if (!fabricCanvas) return;
@@ -392,8 +389,16 @@ const ShapeEditor = forwardRef<ShapeEditorRef, Props>(function Editor(
       recordInHistory,
       getBase64Image,
       clear,
+      onKeydown,
     }),
-    [undo, redo, colorSelectedShape, recordInHistory, getBase64Image],
+    [
+      undo,
+      redo,
+      colorSelectedShape,
+      recordInHistory,
+      getBase64Image,
+      onKeydown,
+    ],
   );
 
   return (

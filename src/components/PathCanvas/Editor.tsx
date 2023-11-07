@@ -38,6 +38,7 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   const svgcanvasRef = React.useRef<HTMLDivElement>(null);
   const [canvasState, dispatchCanvasState] = React.useContext(canvasContext);
   const { canvas, mode, updated } = canvasState;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [svgCanvas, setSvgCanvas] = useState<any>();
   const [changingColor, setChangingColor] = useState(
@@ -176,39 +177,30 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
   };
 
   const onKeyDown = (event: any) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "z") {
+      canvas.undoMgr.undo();
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "y") {
+      canvas.undoMgr.redo();
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+      setCopiedElements(canvas?.selectedElements);
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+      if (copiedElements.length !== 0) {
+        canvas?.clearSelection();
+        canvas?.addToSelection(copiedElements);
+        canvas?.cloneSelectedElements(5, 5);
+        // canvas?.pasteElements(canvas?.selectedElements, 0, 0);
+        // console.log("pasted!");
+      }
+    }
     if (event.key === "Backspace" && event.target.tagName !== "INPUT") {
       event.preventDefault();
       event.stopPropagation();
       dispatchCanvasState({ type: "deleteSelectedElements" });
     }
   };
-
-  useEffect(() => {
-    const keyDownListener = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-        canvas.undoMgr.undo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-        canvas.undoMgr.redo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
-        setCopiedElements(canvas?.selectedElements);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
-        if (copiedElements.length !== 0) {
-          canvas?.clearSelection();
-          canvas?.addToSelection(copiedElements);
-          canvas?.cloneSelectedElements(5, 5);
-          // canvas?.pasteElements(canvas?.selectedElements, 0, 0);
-          // console.log("pasted!");
-        }
-      }
-    };
-    window.addEventListener("keydown", keyDownListener);
-    return () => {
-      window.removeEventListener("keydown", keyDownListener);
-    };
-  }, [canvas, copiedElements]);
 
   useLayoutEffect(() => {
     const editorDom = svgcanvasRef.current;
@@ -219,10 +211,8 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
     // console.log(canvas);
     dispatchCanvasState({ type: "init", canvas, svgcanvas: editorDom, config });
     dispatchCanvasState({ type: "mode", mode: "path" });
-    document.addEventListener("keydown", onKeyDown.bind(canvas));
     return () => {
       // cleanup function
-      document.removeEventListener("keydown", onKeyDown.bind(canvas));
     };
   }, []);
   updateContextPanel();
@@ -277,8 +267,18 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             height: "320px",
             position: "relative",
             border: "0.5px solid black",
+            outline: "none",
             // background: imageUrlToEdit ? `url(${imageUrlToEdit})` : undefined,
             // background: `linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.5)), url("fakeImage.png")`,
+          }}
+          ref={containerRef}
+          tabIndex={1}
+          onMouseDown={() => {
+            containerRef.current?.focus();
+          }}
+          onKeyDown={e => {
+            onKeyDown(e);
+            // editorRef.current?.onKeydown(e as any);
           }}
         >
           {imageUrlToEdit && (
