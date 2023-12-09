@@ -88,30 +88,30 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
     if (imageUrlToEdit) {
       clear();
       setRecentlyUsedColors([]);
-      const image = new Image();
-      image.src = imageUrlToEdit;
-      const gridSquareSize = 10;
-      image.onload = () => {
-        const { width, height } = image;
-        const imageWorldPosX = 0;
-        const imageWorldPosY = 0;
+      // const image = new Image();
+      // image.src = imageUrlToEdit;
+      // const gridSquareSize = 10;
+      // image.onload = () => {
+      //   const { width, height } = image;
+      //   const imageWorldPosX = 0;
+      //   const imageWorldPosY = 0;
 
-        const { x, y } = convertWorldPosToCanvasOffset(
-          imageWorldPosX,
-          imageWorldPosY,
-        );
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const imageWidth = gridSquareSize * 32;
-        const imageHeight = gridSquareSize * 32;
-        const ratio = Math.min(canvasWidth / width, canvasHeight / height, 1);
-        const scaledWidth = width * ratio;
-        const scaledHeight = height * ratio;
-        const left = (canvasWidth - scaledWidth) / 2;
-        const top = (canvasHeight - scaledHeight) / 2;
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(image, x, y, imageWidth, imageHeight);
-      };
+      //   const { x, y } = convertWorldPosToCanvasOffset(
+      //     imageWorldPosX,
+      //     imageWorldPosY,
+      //   );
+      //   const canvasWidth = canvas.width;
+      //   const canvasHeight = canvas.height;
+      //   const imageWidth = gridSquareSize * 32;
+      //   const imageHeight = gridSquareSize * 32;
+      //   const ratio = Math.min(canvasWidth / width, canvasHeight / height, 1);
+      //   const scaledWidth = width * ratio;
+      //   const scaledHeight = height * ratio;
+      //   const left = (canvasWidth - scaledWidth) / 2;
+      //   const top = (canvasHeight - scaledHeight) / 2;
+      //   const ctx = canvas.getContext("2d");
+      //   ctx?.drawImage(image, x, y, imageWidth, imageHeight);
+      // };
     } else {
       const backgroundCanvas = getBackgroundCanvas();
       if (!backgroundCanvas) return;
@@ -230,7 +230,21 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
 
   return (
     <Flex direction="row" gap="size-100">
-      <div className="bg-white">
+      <div className="bg-white relative">
+        {imageUrlToEdit && (
+          <img
+            src={imageUrlToEdit}
+            style={{
+              touchAction: "none",
+              pointerEvents: "none",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 320,
+              height: 320,
+            }}
+          />
+        )}
         <Dotting
           ref={dottingRef}
           width={320}
@@ -239,6 +253,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
           brushColor={
             imageUrlToEdit ? "#DDDDDD" : finalSelectedColor.toString("hex")
           }
+          backgroundColor="transparent"
           initLayers={[
             {
               id: "default",
@@ -246,6 +261,7 @@ const PixelCanvas = forwardRef<ImageExportRef, Props>(function Canvas(
             },
           ]}
           gridSquareLength={10}
+          // backgroundColor="transparent"
           defaultPixelColor={imageUrlToEdit ? "transparent" : "#ffffff"}
           isGridVisible={isGridVisible}
           isPanZoomable={false}
