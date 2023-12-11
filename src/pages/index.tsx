@@ -18,12 +18,19 @@ import {
   ActionButton,
   Menu,
   Item,
+  Tabs,
+  TabList,
+  TabPanels,
 } from "@adobe/react-spectrum";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 import { PixelModifyItem } from "dotting";
 import { parseColor } from "@react-stately/color";
 
 import {
+  Key,
   LegacyRef,
   Ref,
   useCallback,
@@ -126,6 +133,21 @@ export default function Home() {
   }>();
   const [brushCanvasImageBlob, setBrushCanvasImageBlob] = useState<Blob>();
 
+  let tabs = [
+    {
+      id: 1,
+      name: "Searched Images",
+      // children: "Arma virumque cano, Troiae qui primus ab oris.",
+    },
+    {
+      id: 2,
+      name: "Favorites",
+      // children: "Senatus Populusque Romanus.",
+    },
+  ];
+  type Tab = (typeof tabs)[0];
+  let [tabId, setTabId] = useState<Key>(1);
+
   const [isModelActive, setIsModelActive] = useState(false);
   const imageExportUtilRef = useRef<ImageExportRef>(null);
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
@@ -138,6 +160,31 @@ export default function Home() {
     "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/9ee9d9df-c2ec-49e4-aaff-19d4c2328bdc-image.png",
     "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/756e4d6c-349c-4dbc-9de8-48d44498298d-image.png",
   ]);
+  const [favoriteImages, setFavoriteImages] = useState<Array<string>>([]);
+
+  const addFavoriteImage = (image: string) => {
+    setFavoriteImages(prev => {
+      localStorage.setItem("favorites", JSON.stringify([...prev, image]));
+      return [...prev, image];
+    });
+  };
+
+  const removeFavoriteImage = (image: string) => {
+    setFavoriteImages(prev => {
+      localStorage.setItem(
+        "favorites",
+        JSON.stringify(prev.filter(item => item !== image)),
+      );
+      return prev.filter(item => item !== image);
+    });
+  };
+  useEffect(() => {
+    const favoritesData = localStorage.getItem("favorites");
+    if (favoritesData) {
+      setFavoriteImages(JSON.parse(favoritesData));
+      console.log(JSON.parse(favoritesData));
+    }
+  }, [setFavoriteImages]);
   useEffect(() => {
     // access local storage
     const localData = localStorage.getItem("generated_images");
@@ -221,8 +268,8 @@ export default function Home() {
   const router = useRouter();
 
   return (
-    <main className={`${inter.className}`}>
-      <Flex UNSAFE_className="px-2 py-2">
+    <main className={`${inter.className} overflow-x-hidden`}>
+      <Flex UNSAFE_className="px-2 py-2 absolute bottom-5 right-2 z-50">
         <MenuTrigger>
           <ActionButton aria-label="Others">
             <Settings />
@@ -252,7 +299,7 @@ export default function Home() {
           </Menu>
         </MenuTrigger>
       </Flex>
-      <div className="flex min-h-screen flex-col px-24 relative">
+      <div className="flex min-h-screen flex-col relative">
         {/* <div className="absolute top-0 left-0">
         <Link href="/">
           <Button variant="secondary">Basic</Button>
@@ -387,46 +434,60 @@ export default function Home() {
           </Flex>
         </div>
         <Flex direction="column" gap="size-100" UNSAFE_className="mt-4">
-          <Text UNSAFE_className="text-lg font-bold">Generated Images</Text>
+          <Tabs
+            aria-label="image tabs"
+            items={tabs}
+            onSelectionChange={setTabId}
+          >
+            <TabList>
+              {(item: Tab) => (
+                <Item>
+                  <div className="px-2">{item.name}</div>
+                </Item>
+              )}
+            </TabList>
+            {/* <TabPanels>
+              <Item key="FoR">
+                Arma virumque cano, Troiae qui primus ab oris.
+              </Item>
+              <Item key="MaR">Senatus Populusque Romanus.</Item>
+              <Item key="Emp">Alea jacta est.</Item>
+            </TabPanels> */}
+          </Tabs>
+          {/* <Text UNSAFE_className="text-lg font-bold">Generated Images</Text> */}
           {/* <div style={{}}>
           <DynamicComponentWithNoSSR />
         </div> */}
-          <div className="grid grid-cols-2 gap-1em lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 max-w-[1600px]">
-            {galleryImage.map(image => (
-              <ImageComponent
-                key={image}
-                image={image}
-                setImageUrlToEdit={setImageUrlToEdit}
-                setIsAssistiveCanvasOpen={setIsAssistiveCanvasOpen}
-              />
-              // <div key={image} className="relative">
-              //   <Image
-              //     UNSAFE_className="mb-4"
-              //     alt={"image"}
-              //     key={image}
-              //     src={image}
-              //     width={300}
-              //     height={300}
-              //   />
-              //   <Button
-              //     variant="secondary"
-              //     // UNSAFE_className="absolute top-0 right-0"
-              //     UNSAFE_className="bg-white"
-              //     UNSAFE_style={{
-              //       position: "absolute",
-              //       top: 5,
-              //       left: 5,
-              //       color: "#fff",
-              //     }}
-              //     onPress={() => {
-              //       setImageUrlToEdit(image);
-              //       setIsAssistiveCanvasOpen(true);
-              //     }}
-              //   >
-              //     Edit
-              //   </Button>
-              // </div>
-            ))}
+          <div className="mx-auto">
+            {tabId === 1 ? (
+              <div className="flex flex-wrap">
+                {galleryImage.map(image => (
+                  <ImageComponent
+                    key={image}
+                    image={image}
+                    setImageUrlToEdit={setImageUrlToEdit}
+                    setIsAssistiveCanvasOpen={setIsAssistiveCanvasOpen}
+                    addFavoriteImage={addFavoriteImage}
+                    removeFavoriteImage={removeFavoriteImage}
+                    favoriteImages={favoriteImages}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap">
+                {favoriteImages.map(image => (
+                  <ImageComponent
+                    key={image}
+                    image={image}
+                    setImageUrlToEdit={setImageUrlToEdit}
+                    setIsAssistiveCanvasOpen={setIsAssistiveCanvasOpen}
+                    addFavoriteImage={addFavoriteImage}
+                    removeFavoriteImage={removeFavoriteImage}
+                    favoriteImages={favoriteImages}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </Flex>
       </div>
