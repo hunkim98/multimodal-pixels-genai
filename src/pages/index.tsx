@@ -302,12 +302,24 @@ export default function Home() {
               }
             }}
           >
-            <Item key={AssistiveImageInputType.NULL}>text-only</Item>
-            <Item key={AssistiveImageInputType.BRUSH}>brush</Item>
-            <Item key={AssistiveImageInputType.PIXELS}>pixels</Item>
-            <Item key={AssistiveImageInputType.SHAPE}>shape</Item>
-            <Item key={AssistiveImageInputType.PATH}>path</Item>
-            <Item key="clear">clear</Item>
+            <Item aria-label="text-only" key={AssistiveImageInputType.NULL}>
+              text-only
+            </Item>
+            <Item aria-label="brush" key={AssistiveImageInputType.BRUSH}>
+              brush
+            </Item>
+            <Item aria-label="pixels" key={AssistiveImageInputType.PIXELS}>
+              pixels
+            </Item>
+            <Item aria-label="shape" key={AssistiveImageInputType.SHAPE}>
+              shape
+            </Item>
+            <Item aria-label="path" key={AssistiveImageInputType.PATH}>
+              path
+            </Item>
+            <Item aria-label="clear" key="clear">
+              clear
+            </Item>
           </Menu>
         </MenuTrigger>
       </Flex>
@@ -453,7 +465,7 @@ export default function Home() {
           >
             <TabList>
               {(item: Tab) => (
-                <Item>
+                <Item aria-label={item.name}>
                   <div className="px-2">{item.name}</div>
                 </Item>
               )}
