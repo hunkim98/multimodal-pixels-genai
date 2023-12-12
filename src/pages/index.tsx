@@ -63,7 +63,7 @@ import Settings from "@spectrum-icons/workflow/Settings";
 
 const inter = Inter({ subsets: ["latin"] });
 
-enum AssistiveImageInputType {
+export enum AssistiveImageInputType {
   BRUSH = "brush",
   PIXELS = "pixels",
   SHAPE = "shape",
@@ -493,6 +493,9 @@ export default function Home() {
                     setIsAssistiveCanvasOpen={setIsAssistiveCanvasOpen}
                     addFavoriteImage={addFavoriteImage}
                     removeFavoriteImage={removeFavoriteImage}
+                    selectedAsssistivImageInputType={
+                      selectedAsssistivImageInputType
+                    }
                     favoriteImages={favoriteImages}
                   />
                 ))}
@@ -507,6 +510,9 @@ export default function Home() {
                     setIsAssistiveCanvasOpen={setIsAssistiveCanvasOpen}
                     addFavoriteImage={addFavoriteImage}
                     removeFavoriteImage={removeFavoriteImage}
+                    selectedAsssistivImageInputType={
+                      selectedAsssistivImageInputType
+                    }
                     favoriteImages={favoriteImages}
                   />
                 ))}
