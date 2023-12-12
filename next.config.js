@@ -73,6 +73,7 @@ const nextConfig = {
   ],
   env: {
     REPLICATE_TOKEN: process.env.REPLICATE_TOKEN,
+    // IMAGE_URL: process.env.IMAGE_URL,
     // S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
     // S3_REGION: process.env.S3_REGION,
     // S3_SECRET_KEY: process.env.S3_SECRET_KEY,

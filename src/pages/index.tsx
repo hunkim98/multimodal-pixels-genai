@@ -470,7 +470,7 @@ export default function Home() {
           {/* <div style={{}}>
           <DynamicComponentWithNoSSR />
         </div> */}
-          <div className="mx-auto">
+          <div className="">
             {tabId === 1 ? (
               <div className="flex flex-wrap">
                 {galleryImage.map(image => (
