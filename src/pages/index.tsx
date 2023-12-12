@@ -153,12 +153,12 @@ export default function Home() {
   const [selectedAsssistivImageInputType, setSelectedAssistiveImageInputType] =
     useState<AssistiveImageInputType>(AssistiveImageInputType.NULL);
   const [galleryImage, setGalleryImages] = useState<Array<string>>([
-    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
-    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
-    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/07cfe359-de1a-479c-829b-2d2ec8a2d6c5-image.png",
-    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/96f0f0b5-df1b-4dd8-9afc-9f4aa19a40b4-image.png",
-    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/9ee9d9df-c2ec-49e4-aaff-19d4c2328bdc-image.png",
-    "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/756e4d6c-349c-4dbc-9de8-48d44498298d-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/824587c6-c0b1-4b5c-9eb3-f6e92715f38a-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/2b14af4a-1cf9-4738-870d-610c93961def-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/07cfe359-de1a-479c-829b-2d2ec8a2d6c5-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/96f0f0b5-df1b-4dd8-9afc-9f4aa19a40b4-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/9ee9d9df-c2ec-49e4-aaff-19d4c2328bdc-image.png",
+    // "https://pickgeul-asset.s3.ap-northeast-1.amazonaws.com/756e4d6c-349c-4dbc-9de8-48d44498298d-image.png",
   ]);
   const [favoriteImages, setFavoriteImages] = useState<Array<string>>([]);
 
@@ -178,6 +178,13 @@ export default function Home() {
       return prev.filter(item => item !== image);
     });
   };
+
+  const clearImages = () => {
+    setGalleryImages([]);
+    localStorage.setItem("generated_images", JSON.stringify([]));
+    localStorage.setItem("favorites", JSON.stringify([]));
+  };
+
   useEffect(() => {
     const favoritesData = localStorage.getItem("favorites");
     if (favoritesData) {
@@ -283,6 +290,10 @@ export default function Home() {
                   AssistiveImageInputType.NULL,
                 );
               } else {
+                if (key === "clear") {
+                  clearImages();
+                  return;
+                }
                 setIsAssistiveCanvasOpen(true);
                 setSelectedAssistiveImageInputType(
                   key as AssistiveImageInputType,
@@ -296,6 +307,7 @@ export default function Home() {
             <Item key={AssistiveImageInputType.PIXELS}>pixels</Item>
             <Item key={AssistiveImageInputType.SHAPE}>shape</Item>
             <Item key={AssistiveImageInputType.PATH}>path</Item>
+            <Item key="clear">clear</Item>
           </Menu>
         </MenuTrigger>
       </Flex>
