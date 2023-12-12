@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button, Image } from "@adobe/react-spectrum";
 import StarOutline from "@spectrum-icons/workflow/StarOutline";
 import Star from "@spectrum-icons/workflow/Star";
+import { AssistiveImageInputType } from "@/pages";
 
 interface ImageComponentProps {
   image: string;
@@ -10,6 +11,7 @@ interface ImageComponentProps {
   addFavoriteImage: (url: string) => void;
   removeFavoriteImage: (url: string) => void;
   favoriteImages: string[];
+  selectedAsssistivImageInputType: AssistiveImageInputType;
 }
 
 function ImageComponent({
@@ -19,6 +21,7 @@ function ImageComponent({
   addFavoriteImage,
   removeFavoriteImage,
   favoriteImages,
+  selectedAsssistivImageInputType,
 }: ImageComponentProps) {
   const [isHovered, setIsHovered] = useState<boolean>(false);
   return (
@@ -72,26 +75,27 @@ function ImageComponent({
           />
         </svg>
       </div>
-      {isHovered && (
-        <Button
-          variant="secondary"
-          // UNSAFE_className="absolute top-0 right-0"
-          UNSAFE_className="bg-white"
-          UNSAFE_style={{
-            zIndex: 2,
-            position: "absolute",
-            bottom: 25,
-            right: 15,
-            color: "#fff",
-          }}
-          onPress={() => {
-            setImageUrlToEdit(image);
-            setIsAssistiveCanvasOpen(true);
-          }}
-        >
-          Edit
-        </Button>
-      )}
+      {isHovered &&
+        selectedAsssistivImageInputType !== AssistiveImageInputType.NULL && (
+          <Button
+            variant="secondary"
+            // UNSAFE_className="absolute top-0 right-0"
+            UNSAFE_className="bg-white"
+            UNSAFE_style={{
+              zIndex: 2,
+              position: "absolute",
+              bottom: 25,
+              right: 15,
+              color: "#fff",
+            }}
+            onPress={() => {
+              setImageUrlToEdit(image);
+              setIsAssistiveCanvasOpen(true);
+            }}
+          >
+            Edit
+          </Button>
+        )}
     </div>
   );
 }
