@@ -305,7 +305,7 @@ export default function Home() {
 
   return (
     <main className={`${inter.className} overflow-x-hidden`}>
-      <Flex UNSAFE_className="px-2 py-2 absolute bottom-5 right-2 z-50">
+      <Flex UNSAFE_className="px-2 py-2 fixed bottom-5 right-2 z-50">
         <MenuTrigger>
           <ActionButton aria-label="Others">
             <Settings />
