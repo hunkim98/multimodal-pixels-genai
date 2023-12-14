@@ -185,6 +185,7 @@ export default function Home() {
 
   const clearImages = () => {
     setGalleryImages([]);
+    setFavoriteImages([]);
     localStorage.setItem("generated_images", JSON.stringify([]));
     localStorage.setItem("favorites", JSON.stringify([]));
   };
@@ -217,27 +218,32 @@ export default function Home() {
       mask?: string;
     }) => {
       // draw image on canvas
-      let imageData = undefined;
-      const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 512;
-      const ctx = canvas.getContext("2d");
-      await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          ctx?.drawImage(img, 0, 0);
-          imageData = ctx?.getImageData(0, 0, 512, 512);
-          resolve(undefined);
-        };
-        img.src = image!;
-      });
+      // const canvas = document.createElement("canvas");
+      // canvas.width = 512;
+      // canvas.height = 512;
+      // const ctx = canvas.getContext("2d");
+      // console.log(image, " this is image");
+      // if (image) {
+      //   await new Promise((resolve, reject) => {
+      //     const img = new Image();
+      //     // img.crossOrigin = "anonymous";
+      //     // img.crossOrigin = "*";
+      //     img.onload = () => {
+      //       ctx?.drawImage(img, 0, 0);
+      //       // imageData = ctx?.getImageData(0, 0, 512, 512);
+      //       resolve(undefined);
+      //     };
+      //     img.src = image!;
+      //   });
+      // }
 
-      const dataUrl = canvas.toDataURL("image/png");
-      const base64Img = dataUrl.split(",")[1];
+      // const dataUrl = canvas.toDataURL("image/png");
+      // const base64Img = dataUrl.split(",")[1];
 
       const body: KandinskyBody = {
         prompt: modelInputs.prompt,
-        image: base64Img,
+        // image: image ? base64Img : undefined,
+        image: image,
         mask: mask,
         type,
       };
@@ -251,9 +257,9 @@ export default function Home() {
           setGalleryImages(prev => {
             localStorage.setItem(
               "generated_images",
-              JSON.stringify([...prev, ...images]),
+              JSON.stringify([...images, ...prev]),
             );
-            return [...prev, ...images];
+            return [...images, ...prev];
           });
           setIsModelActive(false);
         })
@@ -376,7 +382,7 @@ export default function Home() {
                 <>
                   {isAssistiveCanvasOpen && (
                     <div
-                      className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2`}
+                      className={`flex bg-white rounded-md overflow-hidden shadow-md mt-2 z-50`}
                       onClick={e => e.stopPropagation()}
                     >
                       {selectedAsssistivImageInputType ===

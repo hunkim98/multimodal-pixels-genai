@@ -38,7 +38,7 @@ function ImageComponent({
         />
       )} */}
       <Image
-        UNSAFE_className="hover:scale-105 transition duration-500 ease-in-out select-none"
+        UNSAFE_className="transition duration-500 ease-in-out select-none"
         alt={"image"}
         key={image}
         src={image}
