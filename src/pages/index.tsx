@@ -4,7 +4,7 @@ import {
   Flex,
   TextField,
   Text,
-  Image,
+  Image as ImageDiv,
   Heading,
   Slider,
   Switch,
@@ -43,7 +43,11 @@ import { ColorWheel } from "@react-spectrum/color";
 import { ModelInputs } from "@/types/replicate";
 import axios from "axios";
 import { imageFileUpload } from "@/utils/upload";
-import { blobToBase64, createImageOutOfNestedColorArray } from "@/utils/image";
+import {
+  blobToBase64,
+  createImageOutOfNestedColorArray,
+  makeCanvasToImageBlob,
+} from "@/utils/image";
 
 import OutlineCanvas from "@/components/SketchCanvas";
 import BrushCanvas from "@/components/BrushCanvas";
@@ -203,7 +207,7 @@ export default function Home() {
     prompt: "A robot sitting on the ground",
   });
   const generateImages = useCallback(
-    ({
+    async ({
       type,
       image,
       mask,
@@ -212,9 +216,28 @@ export default function Home() {
       image?: string;
       mask?: string;
     }) => {
+      // draw image on canvas
+      let imageData = undefined;
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          ctx?.drawImage(img, 0, 0);
+          imageData = ctx?.getImageData(0, 0, 512, 512);
+          resolve(undefined);
+        };
+        img.src = image!;
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const base64Img = dataUrl.split(",")[1];
+
       const body: KandinskyBody = {
         prompt: modelInputs.prompt,
-        image: image,
+        image: base64Img,
         mask: mask,
         type,
       };
