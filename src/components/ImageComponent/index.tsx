@@ -27,7 +27,7 @@ function ImageComponent({
   return (
     <div
       key={image}
-      className="relative w-[25%]"
+      className="relative w-[25%] z-0"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

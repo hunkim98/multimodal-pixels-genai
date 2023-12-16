@@ -378,7 +378,7 @@ export default function Home() {
           <Flex direction="column" gap="size-100">
             {selectedAsssistivImageInputType !==
               AssistiveImageInputType.NULL && (
-              <div className="z-50">
+              <div className="z-100">
                 <>
                   {isAssistiveCanvasOpen && (
                     <div
