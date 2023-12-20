@@ -128,8 +128,11 @@ const SketchCanvas: React.FC<SketchCanvasProps> = props => {
       dataCanvas,
       correctedLeftTopScreenPoint.x * widthExtensionRatio,
       correctedLeftTopScreenPoint.y * heightExtensionRatio,
-      canvasInfo.width * panZoom.scale * widthExtensionRatio,
-      canvasInfo.height * panZoom.scale * heightExtensionRatio,
+      dataCanvas.width,
+      dataCanvas.height,
+      512,
+      512,
+      dpr,
     );
     props.setSketchCanvasImageBlob(blob);
     // tempCanvas.width = canvasInfo.width;

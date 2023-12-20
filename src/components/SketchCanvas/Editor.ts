@@ -1077,16 +1077,6 @@ export class Editor extends EventDispatcher {
     return this.dataCanvasElement;
   }
 
-  getImageBlob() {
-    return createImageFromPartOfCanvas(
-      this.dataCanvasElement,
-      this.canvasInfo.leftTopX,
-      this.canvasInfo.leftTopY,
-      this.canvasInfo.width,
-      this.canvasInfo.height,
-    );
-  }
-
   render() {
     this.clear();
 
