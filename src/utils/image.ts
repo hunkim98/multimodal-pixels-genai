@@ -46,9 +46,12 @@ export const createImageFromPartOfCanvas = (
   canvasHeight: number,
   width: number,
   height: number,
+  dpr: number,
 ) => {
   const imageCanvas = document.createElement("canvas");
   const tempContext = imageCanvas.getContext("2d")!;
+  tempContext.scale(dpr, dpr);
+
   imageCanvas.width = width;
   imageCanvas.height = height;
   tempContext.fillStyle = "#ffffff";

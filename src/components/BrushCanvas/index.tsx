@@ -167,6 +167,7 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
         dataCanvas.height,
         512,
         512,
+        dpr,
       );
       props.setBrushCanvasImageBlob(blob);
       return blob;

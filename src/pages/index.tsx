@@ -460,16 +460,16 @@ export default function Home() {
                   alignSelf={"end"}
                   onPress={async () => {
                     setIsModelActive(true);
-                    onClickGenerateButton();
-                    // const base64 =
-                    //   await imageExportUtilRef.current?.getBase64Image();
-                    // if (base64) {
-                    //   //download
-                    //   const a = document.createElement("a");
-                    //   a.href = base64;
-                    //   a.download = "myImage.png";
-                    //   a.click();
-                    // }
+                    // onClickGenerateButton();
+                    const base64 =
+                      await imageExportUtilRef.current?.getBase64Image();
+                    if (base64) {
+                      //download
+                      const a = document.createElement("a");
+                      a.href = base64;
+                      a.download = "myImage.png";
+                      a.click();
+                    }
                   }}
                 >
                   {isModelActive ? (

@@ -76,6 +76,7 @@ export class Editor extends EventDispatcher {
   private mouseMoveWorldPos: Coord = { x: 0, y: 0 };
   private previousMouseMoveWorldPos: Coord | null = null;
   private directionToExtendSelectedArea: ButtonDirection | null = null;
+  private isPanZoomable = false;
   private undoHistory: Array<Action> = [];
   private redoHistory: Array<Action> = [];
   private canvasInfo: CanvasDataInfo = {
@@ -491,6 +492,7 @@ export class Editor extends EventDispatcher {
   }
 
   handleWheel = (e: WheelEvent) => {
+    if (!this.isPanZoomable) return;
     e.preventDefault();
     if (this.mouseMode === MouseMode.EXTENDING) {
       return;
@@ -523,6 +525,7 @@ export class Editor extends EventDispatcher {
   };
 
   handlePanning = (evt: TouchyEvent) => {
+    if (!this.isPanZoomable) return;
     const lastMousePos = this.panPoint.lastMousePos;
     if (window.TouchEvent && evt instanceof TouchEvent) {
       if (evt.touches.length > 1) {
@@ -544,7 +547,8 @@ export class Editor extends EventDispatcher {
 
   drawButtons() {}
 
-  handlePinchZoom(evt: TouchyEvent) {
+  handlePinchZoom = (evt: TouchyEvent) => {
+    if (!this.isPanZoomable) return;
     const newPanZoom = calculateNewPanZoomFromPinchZoom(
       evt,
       this.interactionCanvasElement,
@@ -558,7 +562,7 @@ export class Editor extends EventDispatcher {
       this.pinchZoomDiff = newPanZoom.pinchZoomDiff;
       this.setPanZoom(newPanZoom.panZoom);
     }
-  }
+  };
 
   handleExtension = (evt: TouchyEvent) => {
     evt.preventDefault();
