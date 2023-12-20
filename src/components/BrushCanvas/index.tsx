@@ -533,6 +533,22 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
             minValue={brushTool === SketchTool.PEN ? 3 : 6}
             maxValue={brushTool === SketchTool.PEN ? 23 : 46}
           />
+          <div className="flex gap-1 mb-[-10px]">
+            <div
+              className="bg-black border border-black w-[18px] h-[18px]"
+              onClick={() => {
+                // change to black
+                setFinalSelectedColor(parseColor("hsl(0, 0%, 0%)"));
+              }}
+            ></div>
+            <div
+              className="bg-white border border-black w-[18px] h-[18px]"
+              onClick={() => {
+                //change to white
+                setFinalSelectedColor(parseColor("hsl(0, 0%, 100%)"));
+              }}
+            ></div>
+          </div>
           <ColorWheel
             size={130}
             isDisabled={imageUrlToEdit ? true : false}

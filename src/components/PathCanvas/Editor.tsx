@@ -383,7 +383,22 @@ const PathCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             <RedoIcon />
           </Button>
         </Flex>
-
+        <div className="flex gap-1 mb-[-10px] mt-[18px]">
+          <div
+            className="bg-black border border-black w-[18px] h-[18px]"
+            onClick={() => {
+              // change to black
+              setFinalSelectedColor(parseColor("hsl(0, 0%, 0%)"));
+            }}
+          ></div>
+          <div
+            className="bg-white border border-black w-[18px] h-[18px]"
+            onClick={() => {
+              //change to white
+              setFinalSelectedColor(parseColor("hsl(0, 0%, 100%)"));
+            }}
+          ></div>
+        </div>
         <ColorWheel
           isDisabled={imageUrlToEdit ? true : false}
           size={130}

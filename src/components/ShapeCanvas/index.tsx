@@ -188,19 +188,22 @@ const ShapeCanvas = forwardRef<ImageExportRef, {}>(function Canvas(
             <RedoIcon />
           </Button>
         </Flex>
-        {/* <Slider
-          labelPosition="side"
-          label="brush size"
-          showValueLabel={false}
-          UNSAFE_className="mt-1"
-          defaultValue={1}
-          // value={brushSize}
-          onChange={value => {
-            // setBrushSize(value);
-          }}
-          minValue={1}
-          maxValue={5}
-        /> */}
+        <div className="flex gap-1 mb-[-10px] mt-[18px]">
+          <div
+            className="bg-black border border-black w-[18px] h-[18px]"
+            onClick={() => {
+              // change to black
+              setFinalSelectedColor(parseColor("hsl(0, 0%, 0%)"));
+            }}
+          ></div>
+          <div
+            className="bg-white border border-black w-[18px] h-[18px]"
+            onClick={() => {
+              //change to white
+              setFinalSelectedColor(parseColor("hsl(0, 0%, 100%)"));
+            }}
+          ></div>
+        </div>
         <ColorWheel
           size={130}
           isDisabled={imageUrlToEdit ? true : false}
