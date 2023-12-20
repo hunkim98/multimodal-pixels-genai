@@ -163,6 +163,8 @@ const BrushCanvas = forwardRef<ImageExportRef, BrushCanvasProps>(
         dataCanvas,
         correctedLeftTopScreenPoint.x * widthExtensionRatio,
         correctedLeftTopScreenPoint.y * heightExtensionRatio,
+        dataCanvas.width,
+        dataCanvas.height,
         512,
         512,
       );
